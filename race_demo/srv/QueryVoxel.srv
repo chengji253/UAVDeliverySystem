@@ -1,0 +1,6 @@
+float32 x
+float32 y
+float32 z
+---
+race_demo/Voxel voxel
+bool success

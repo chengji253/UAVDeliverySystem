@@ -1,0 +1,16 @@
+<launch>
+  <env name="ROSCONSOLE" value="stdout"/>
+
+  <node pkg="race_demo" name="schedule_mangage" type="schedule_mangage.py" output="screen">
+    
+  </node>
+
+  <node pkg="race_demo" name="car_mangage_node" type="car_mangage_node.py" output="screen">
+    <param name="init_car_num" value="6" type="int" />
+  </node>
+
+  <node pkg="race_demo" name="uav_mangage_node" type="uav_mangage_node.py" output="screen">
+    <param name="init_uav_num" value="8" type="int" />
+  </node>
+
+</launch>

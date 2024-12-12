@@ -1,0 +1,2 @@
+uint32 peer_id
+string task_guid

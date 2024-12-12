@@ -1,0 +1,6 @@
+SelfUAVState[] READY
+SelfUAVState[] ON_CAR
+SelfUAVState[] WAITING_GO
+SelfUAVState[] WAITING_BACK
+SelfUAVState[] FLYING_GO
+SelfUAVState[] FLYING_BACK

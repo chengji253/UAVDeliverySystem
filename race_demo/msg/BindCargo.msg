@@ -1,0 +1,2 @@
+string drone_sn
+uint32 cargo_id
