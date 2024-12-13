@@ -1,0 +1,146 @@
+{
+    "guid": "GUID_267_1000_1",
+    "magvLimitConfig": {
+        "maxHoriAcc": 1,
+        "maxHoriDec": 0.4,
+        "maxHoriMoveSpeed": 1.4,
+        "maxThetaAcc": 2.5,
+        "maxThetaSpeed": 3
+    },
+    "magvParamList": [
+        {
+            "birthplace": {
+                "x": 184,
+                "y": 434,
+                "z": -16
+            },
+            "currentDir": "/opt/race/magv",
+            "guid": "GUID_267_1000_1",
+            "ip": "192.168.100.2",
+            "lastReportTime": 1726227150100,
+            "magvSn": "SIM-MAGV-0001",
+            "mapServerIp": "192.168.100.5",
+            "mapServerPort": 5050,
+            "peerId": 49867824,
+            "sceneIp": "192.168.100.5",
+            "scenePeerId": 50296386,
+            "scenePort": 9999,
+            "status": "PEER_NO_CONNECTION",
+            "taskId": 1000,
+            "tcpPort": 3000,
+            "udpPort": 3001
+        },
+        {
+            "birthplace": {
+                "x": 184,
+                "y": 440,
+                "z": -16
+            },
+            "currentDir": "/opt/race/magv",
+            "guid": "GUID_267_1000_1",
+            "ip": "192.168.100.2",
+            "lastReportTime": 1726227150101,
+            "magvSn": "SIM-MAGV-0002",
+            "mapServerIp": "192.168.100.5",
+            "mapServerPort": 5050,
+            "peerId": 49490346,
+            "sceneIp": "192.168.100.5",
+            "scenePeerId": 50296386,
+            "scenePort": 9999,
+            "status": "PEER_NO_CONNECTION",
+            "taskId": 1000,
+            "tcpPort": 3002,
+            "udpPort": 3003
+        },
+        {
+            "birthplace": {
+                "x": 184,
+                "y": 446,
+                "z": -16
+            },
+            "currentDir": "/opt/race/magv",
+            "guid": "GUID_267_1000_1",
+            "ip": "192.168.100.2",
+            "lastReportTime": 1726227150103,
+            "magvSn": "SIM-MAGV-0003",
+            "mapServerIp": "192.168.100.5",
+            "mapServerPort": 5050,
+            "peerId": 49573885,
+            "sceneIp": "192.168.100.5",
+            "scenePeerId": 50296386,
+            "scenePort": 9999,
+            "status": "PEER_NO_CONNECTION",
+            "taskId": 1000,
+            "tcpPort": 3004,
+            "udpPort": 3005
+        },
+        {
+            "birthplace": {
+                "x": 196,
+                "y": 434,
+                "z": -16
+            },
+            "currentDir": "/opt/race/magv",
+            "guid": "GUID_267_1000_1",
+            "ip": "192.168.100.2",
+            "lastReportTime": 1726227150105,
+            "magvSn": "SIM-MAGV-0004",
+            "mapServerIp": "192.168.100.5",
+            "mapServerPort": 5050,
+            "peerId": 49585657,
+            "sceneIp": "192.168.100.5",
+            "scenePeerId": 50296386,
+            "scenePort": 9999,
+            "status": "PEER_NO_CONNECTION",
+            "taskId": 1000,
+            "tcpPort": 3006,
+            "udpPort": 3007
+        },
+        {
+            "birthplace": {
+                "x": 196,
+                "y": 440,
+                "z": -16
+            },
+            "currentDir": "/opt/race/magv",
+            "guid": "GUID_267_1000_1",
+            "ip": "192.168.100.2",
+            "lastReportTime": 1726227150106,
+            "magvSn": "SIM-MAGV-0005",
+            "mapServerIp": "192.168.100.5",
+            "mapServerPort": 5050,
+            "peerId": 49570240,
+            "sceneIp": "192.168.100.5",
+            "scenePeerId": 50296386,
+            "scenePort": 9999,
+            "status": "PEER_NO_CONNECTION",
+            "taskId": 1000,
+            "tcpPort": 3008,
+            "udpPort": 3009
+        },
+        {
+            "birthplace": {
+                "x": 196,
+                "y": 446,
+                "z": -16
+            },
+            "currentDir": "/opt/race/magv",
+            "guid": "GUID_267_1000_1",
+            "ip": "192.168.100.2",
+            "lastReportTime": 1726227150106,
+            "magvSn": "SIM-MAGV-0006",
+            "mapServerIp": "192.168.100.5",
+            "mapServerPort": 5050,
+            "peerId": 49396470,
+            "sceneIp": "192.168.100.5",
+            "scenePeerId": 50296386,
+            "scenePort": 9999,
+            "status": "PEER_NO_CONNECTION",
+            "taskId": 1000,
+            "tcpPort": 3010,
+            "udpPort": 3011
+        }
+    ],
+    "peerId": 49890749,
+    "taskId": 1000
+}

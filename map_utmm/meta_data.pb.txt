@@ -1,0 +1,37 @@
+version_info {
+  map_version: "Meituan-Horizon V1.2.0"
+}
+region_info {
+  region_id: "UNKNOWN"
+  region_name: "UNKNOWN"
+}
+time_info {
+  first_mapping_date: "Wed Aug  7 16:21:51 2024\n"
+}
+map_type: "planning_map"
+ref_gps {
+  latitude: 22.63985958
+  longitude: 114.01372831
+  altitude: 0
+}
+bounding_box {
+  min_x: 0
+  min_y: 0
+  min_z: -82
+  max_x: 1652
+  max_y: 1400
+  max_z: 220
+}
+ground_height: -0.5
+resolution: 2
+resolution_high: 1
+map_3d_info {
+  file_count: 238
+  max_byte_size_per_file: 12675000
+  max_voxel_count_per_file: 377500
+  total_voxel_count: 87308200
+  occupied_voxel_count: 2872384
+  unoccupied_voxel_count: 84435816
+}
+map_file_save_method: "block"
+block_size_per_file: 100

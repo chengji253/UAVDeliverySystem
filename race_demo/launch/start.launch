@@ -1,7 +1,7 @@
 <launch>
   <env name="ROSCONSOLE" value="stdout"/>
 
-  <node pkg="race_demo" name="schedule_mangage" type="schedule_mangage.py" output="screen">
+  <node pkg="race_demo" name="master_mangage" type="master_mangage.py" output="screen">
     
   </node>
 
