@@ -25,7 +25,7 @@ Through extensive experiments, this study demonstrates the rationality and feasi
 
 **1.** Pull the image through docker ([race_images.sh](/shell_file/race_images.sh))
 
-```{.line-numbers}
+```bash{.line-numbers}
 chmod +x race_images.sh
 ./race_images.sh
 
@@ -35,8 +35,8 @@ docker network inspect race_net
 
 **2.** Start the docker file ([start_race.sh](/shell_file/start_race.sh))
 
-```{.line-numbers}
-chmod +x start_race.sh
+```bash{.line-numbers}
+chmod +x stop_race.sh
 ./start_race.sh
 ```
 
@@ -44,7 +44,7 @@ chmod +x start_race.sh
 
 **4.** Stop the docker file ([stop_race.sh](/shell_file/stop_race.sh))
 
-```{.line-numbers}
+```bash{.line-numbers}
 chmod +x start_race.sh
 ./stop_race.sh
 ```
