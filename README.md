@@ -16,11 +16,10 @@ Through extensive experiments, this study demonstrates the rationality and feasi
 
 # 📷 Experiments
 
-<img src="/pic/one.jpg" width="30%">
+<img src="/pic/one.jpg" width="50%">
+<img src="/pic/two.jpg" width="50%">
+<img src="/pic/three.jpg" width="50%">
 
-
-![](/pic/two.jpg)
-![](/pic/three.jpg)
 
 # 🎵 Quick start
 
