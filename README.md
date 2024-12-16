@@ -19,7 +19,7 @@ Through extensive experiments, this study demonstrates the rationality and feasi
 <img src="/pic/one.jpg" width="50%">
 <img src="/pic/two.jpg" width="50%">
 <img src="/pic/three.jpg" width="50%">
-
+<img src="/pic/1.jpg" width="90%">
 
 # 🎵 Quick start
 
