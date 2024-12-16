@@ -33,19 +33,19 @@ class Car_FSM:
         self.sleep_time = 2
         self.cmd_list = []
 
-    # 检测位置到达的函数
+    # For detecting location arrival
     def desPosReached(self, des_pos, cur_pos, threshold):
         des = np.array([des_pos.x, des_pos.y, des_pos.z])
         cur = np.array([cur_pos.x, cur_pos.y, cur_pos.z])
         return np.linalg.norm(np.array(des - cur)) < threshold
 
-    # 无人车状态转换的函数
+    # For state transition of AGVs
     def changeState(self, new_state):
         self.last_state = self.state
         self.state = new_state
         rospy.loginfo("Car %s state changed from %s to %s" % (self.car_sn, self.last_state, self.state))
 
-    # 移动地面车辆的函数
+    # moving the AGV with route
     def moveWithRoute(self, route):
         if len(route) == 0:
             return
@@ -57,17 +57,9 @@ class Car_FSM:
         for waypoint in route:
             msg.car_route_info.way_point.append(waypoint)
         msg.car_route_info.yaw = 0.0
-        # rospy.loginfo("--route debug--")
-        # rospy.loginfo(len(route))
-        # rospy.loginfo(route)
         self.target_pos = route[-1]
         self.car_status = self.getCarStatus(self.car_sn)
         car_work_state = self.car_status.car_work_state
-        
-        # while car_work_state != CarPhysicalStatus.CAR_READY:
-        #     self.car_status = self.getCarStatus(self.car_sn)
-        #     car_work_state = self.car_status.car_work_state
-        #     rospy.sleep(0.5)
         
         self.cmd_pub.publish(msg)
         rospy.loginfo("Publish Car %s move command" % (self.car_sn))   
@@ -86,7 +78,7 @@ class Car_FSM:
                 break
             # self.cmd_pub.publish(msg)
         
-    # 移动飞机到车上
+    # Move the UAV onto the AGV
     def moveDroneOnCar(self, uav_sn):
         msg = UserCmdRequest()
         msg.peer_id = self.peer_id
@@ -112,7 +104,7 @@ class Car_FSM:
 
         rospy.loginfo("UAV %s move on Car %s" % (uav_sn, self.car_sn))
 
-    # 往飞机上挂餐
+    # Move the cargo onto the UAV
     def moveCargoInDrone(self, cargo_id):
         msg = UserCmdRequest()
         msg.peer_id = self.peer_id
@@ -138,7 +130,7 @@ class Car_FSM:
 
         rospy.loginfo("UAV %s load cargo %s" % (self.car_status.drone_sn, cargo_id))
 
-    # 换电函数
+    # The UAV battery replacement function
     def batteryReplacement(self):
         msg = UserCmdRequest()
         msg.peer_id = self.peer_id
@@ -162,7 +154,7 @@ class Car_FSM:
                 break   
         rospy.loginfo("UAV %s charge battery" % self.car_status.drone_sn)
 
-    # 回收飞机函数
+    # Retrieve the UAV from the AGV
     def droneRetrieve(self):
         self.car_status = self.getCarStatus(self.car_sn)
         uav_sn = self.car_status.drone_sn
@@ -190,7 +182,7 @@ class Car_FSM:
         rospy.loginfo("UAV %s retrieve from Car %s" % (uav_sn, self.car_sn,))
         self.pubUAVState(uav_sn, UAVState.READY)
     
-    # 获取状态的函数
+    # Get the AGV status
     def getState(self):
         self.car_status = self.getCarStatus(self.car_sn)
         state = {
@@ -202,7 +194,7 @@ class Car_FSM:
         }
         return state
     
-    # 状态机主函数
+    # Main loop of the FSM
     def execCmd(self):
         iterations = 0
         
@@ -220,18 +212,11 @@ class Car_FSM:
                 rospy.loginfo("Car %s error" % self.car_sn)
                 break
             if self.state == CarState.WAITING_PICKUP:
-                # 如果没有指令，接到无人机转换成 WAITING_GOTO_GW，
+                # If no command, state will be converted to WAITING_GOTO_GW
                 if len(self.cmd_list) == 0:
                     if self.car_status.drone_sn != '':
                         self.changeState(CarState.WAITING_GOTO_GW)
                         self.pubUAVState(self.car_status.drone_sn, UAVState.ON_CAR)
-                    # # 没有命令 到达工作区附近 随机上一个飞机
-                    # elif self.desPosReached(self.loading_pos, car_pos, threshold=0.5) and car_work_state == CarPhysicalStatus.CAR_READY:
-                    #     uav_sn = self.getReadyUAV()
-                    #     if uav_sn != '': 
-                    #         self.moveDroneOnCar(uav_sn)
-                    #         self.changeState(CarState.WAITING_UAV_WORKING)
-                    #         self.pubUAVState(uav_sn, UAVState.ON_CAR)
                 else:
                     if self.cmd_list[0].type == SelfCommand.MOVE_TO_TARGET:
                         self.moveWithRoute(self.cmd_list[0].route)
@@ -256,7 +241,6 @@ class Car_FSM:
                         self.changeState(CarState.WAITING_GOTO_GW)
                     elif self.last_state == CarState.WAITING_GOTO_AW:
                         self.changeState(CarState.WAITING_GOTO_AW)
-                        # 只能发布一次route，就会切换成 WAITING_GO
                         self.pubUAVState(self.car_status.drone_sn, UAVState.WAITING_GO)
 
             elif self.state == CarState.WAITING_GOTO_GW:
@@ -288,12 +272,9 @@ class Car_FSM:
                 elif self.car_status.drone_sn == '' and not self.desPosReached(self.loading_pos, car_pos, threshold=0.5):
                     self.changeState(CarState.WAITING_PICKUP)
                     # rospy.loginfo("---3---")
-                # 无人车到某个位置，告诉无人机可以起飞
-                # elif self.desPosReached(self.target_pos, car_pos, threshold=0.5):
-                #     self.pubUAVState(self.car_status.drone_sn, UAVState.WAITING_GO)
                         
                 elif len(self.cmd_list) != 0 and self.cmd_list[0].type == SelfCommand.LOAD_CARGO:
-                    # 在上货的时候 收到了多个load cargo 因为飞机上已经有货了 直接pop出去
+                    # Pop excess loading command
                     self.cmd_list.pop(0)
                 
                 else:

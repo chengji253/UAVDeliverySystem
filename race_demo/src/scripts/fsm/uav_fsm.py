@@ -17,7 +17,6 @@ class UAVState(Enum):
     WAITING_BACK = 5
 
 class UAV_FSM:
-    # 初始化
     def __init__(self, config):
         self.cmd_pub = rospy.Publisher('/cmd_exec', UserCmdRequest, queue_size=10000)
         self.state = UAVState.READY
@@ -29,21 +28,21 @@ class UAV_FSM:
         self.sleep_time = 1
         self.cmd_list = []
     
-    # 检测位置到达的函数
+    # For detecting location arrival
     def desPosReached(self, des_pos, cur_pos, threshold):
         des = np.array([des_pos.x, des_pos.y, des_pos.z])
         cur = np.array([cur_pos.x, cur_pos.y, cur_pos.z])
         return np.linalg.norm(np.array(des - cur)) < threshold
 
-    # 无人机状态转换的函数
+    # For state transition of UAVs
     def stateChange(self, new_state):
         old_state = self.state
         self.state = new_state
         rospy.loginfo("UAV %s state changed from %s to %s" % (self.uav_sn, old_state, new_state))
 
-    # 飞机航线飞行函数
+    # moving the UAV with route
     def flyOneRoute(self, route, speed):
-        # 等待无人机就绪
+        # wating for the UAV ready
         while self.uav_status.drone_work_state != DronePhysicalStatus.READY:
             self.uav_status = self.getUAVStatus(self.uav_sn)
             rospy.sleep(self.sleep_time)
@@ -87,10 +86,10 @@ class UAV_FSM:
         rospy.loginfo("UAV %s flying" % self.uav_sn)
         self.target_pos = route[-1]
 
-    # 抛餐函数
+    # The UAV release cargo function
     def releaseCargo(self):
         cargo_id = self.uav_status.bind_cargo_id
-        # 等待无人机就绪
+        # wating for the UAV ready
         while self.uav_status.drone_work_state != DronePhysicalStatus.READY:
             self.uav_status = self.getUAVStatus(self.uav_sn)
             rospy.sleep(self.sleep_time)
@@ -102,22 +101,14 @@ class UAV_FSM:
         self.cmd_pub.publish(msg)
         rospy.loginfo("Publish UAV %s release cargo %s command" % (self.uav_sn, cargo_id))
         
-        iterations = 0
-        max_iterations = 5
         while self.uav_status.bind_cargo_id != 0:
             self.uav_status = self.getUAVStatus(self.uav_sn)
             rospy.sleep(self.sleep_time)
             self.cmd_pub.publish(msg)
-            # 这里不能加 break 会出问题
-            # self.cmd_pub.publish(msg)
-            # iterations += 1  
-            # if iterations >= max_iterations: 
-            #     rospy.loginfo("while max_iterations break releaseCargo")
-            #     break 
         if self.uav_status.bind_cargo_id == 0:
             rospy.loginfo("UAV %s release cargo %s" % (self.uav_sn, cargo_id))
 
-    # 获取状态的函数
+    # Get the UAV status
     def getState(self):
         self.uav_status = self.getUAVStatus(self.uav_sn)
         state = {
@@ -130,7 +121,7 @@ class UAV_FSM:
         }
         return state
     
-    # 执行指令主函数
+    # Main loop of the FSM
     def execCmd(self):
         while not rospy.is_shutdown():
             # rospy.loginfo("UAV %s State: %s \n" % (self.uav_sn, self.state))
@@ -147,15 +138,9 @@ class UAV_FSM:
             elif len(self.cmd_list) != 0:
                 if self.state == UAVState.WAITING_GO:
                     self.flyOneRoute(self.cmd_list[0].route, speed=10.0)
-                    # self.cmd_list.pop(0)
-                    # rospy.loginfo("--1--")
-                    # rospy.loginfo(self.cmd_list[0].route)
                     self.stateChange(UAVState.FLYING_GO)
                 elif self.state == UAVState.WAITING_BACK:
                     self.flyOneRoute(self.cmd_list[0].route, speed=10.0)
-                    # self.cmd_list.pop(0)
-                    # rospy.loginfo("--2--")
-                    # rospy.loginfo(self.cmd_list[0].route)
                     self.stateChange(UAVState.FLYING_BACK)
             
             self.cmd_list.clear()
