@@ -41,6 +41,13 @@ chmod +x start_race.sh
 
 4-Stop the docker file ([stop_race.sh](/shell_file/stop_race.sh))
 
+## Core code
+<img src="/pic/code.jpg" width="90%">
+
+## msg
+
+<img src="/pic/msg.jpg" width="90%">
+
 ## Configuration Files
 
 In the configuration folder you can see the car drone and scene parameter settings as well as the order details.
