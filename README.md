@@ -23,5 +23,20 @@ Through extensive experiments, this study demonstrates the rationality and feasi
 
 # 🎵 Quick start
 
+1-Pull the image through docker ([race_images.sh](/shell_file/race_images.sh)
+) 
+
+chmod +x race_images.sh
+./race_images.sh
+
+docker network create --subnet=192.168.100.0/24 race_net
+docker network inspect race_net
+
+2-Start the docker file ([start_race.sh](/shell_file/start_race.sh))
+
+chmod +x start_race.sh
+./start_race.sh
+
+3- Put the race_demo into the container of the race_user_sdk_container/home/, then you can use ros to compile and run.
 
 
