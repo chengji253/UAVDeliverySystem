@@ -42,10 +42,11 @@ chmod +x start_race.sh
 4-Stop the docker file ([stop_race.sh](/shell_file/stop_race.sh))
 
 ## Core code
+In the src, there are our code code.
 <img src="/pic/code.jpg" width="90%">
 
 ## msg
-
+In the \msg, it shows the type of message published on the topic
 <img src="/pic/msg.jpg" width="90%">
 
 ## Configuration Files
