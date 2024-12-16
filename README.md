@@ -23,23 +23,31 @@ Through extensive experiments, this study demonstrates the rationality and feasi
 
 # 🎵 Quick start
 
-1-Pull the image through docker ([race_images.sh](/shell_file/race_images.sh)
-) 
+**1.** Pull the image through docker ([race_images.sh](/shell_file/race_images.sh))
 
+```{.line-numbers}
 chmod +x race_images.sh
 ./race_images.sh
 
 docker network create --subnet=192.168.100.0/24 race_net
 docker network inspect race_net
+```
 
-2-Start the docker file ([start_race.sh](/shell_file/start_race.sh))
+**2.** Start the docker file ([start_race.sh](/shell_file/start_race.sh))
 
+```{.line-numbers}
 chmod +x start_race.sh
 ./start_race.sh
+```
 
-3- Put the race_demo into the container of the race_user_sdk_container/home/, then you can use ros to compile and run.
+**3.** Put the race_demo into the container of the `race_user_sdk_container/home/`, then you can use ros to compile and run.
 
-4-Stop the docker file ([stop_race.sh](/shell_file/stop_race.sh))
+**4.** Stop the docker file ([stop_race.sh](/shell_file/stop_race.sh))
+
+```{.line-numbers}
+chmod +x start_race.sh
+./stop_race.sh
+```
 
 ## Core code
 In the src, there are our code code.
@@ -64,29 +72,29 @@ In the configuration folder you can see the car drone and scene parameter settin
 [order config](config/user/config.json)
 
 order four time attributes
-```json
+```json{.line-numbers}
 {
-                "betterTime": 1500,
-                "cargoParam": {
-                    "birthplace": {
-                        "x": 190,
-                        "y": 425,
-                        "z": -16
-                    },
-                    "index": 47,
-                    "name": "测试货物47",
-                    "weight": 3.947
-                },
-                "index": 47,
-                "loadingStationInfo": {
-                    "$ref": "$.taskParam.waybillParamList[46].cargoParam.birthplace"
-                },
-                "orderTime": 300,
-                "targetPosition": {
-                    "x": 490,
-                    "y": 390,
-                    "z": -22
-                },
-                "timeout": 1800
-            },
+    "betterTime": 1500,
+    "cargoParam": {
+        "birthplace": {
+            "x": 190,
+            "y": 425,
+            "z": -16
+        },
+        "index": 47,
+        "name": "测试货物47",
+        "weight": 3.947
+    },
+    "index": 47,
+    "loadingStationInfo": {
+        "$ref": "$.taskParam.waybillParamList[46].cargoParam.birthplace"
+    },
+    "orderTime": 300,
+    "targetPosition": {
+        "x": 490,
+        "y": 390,
+        "z": -22
+    },
+    "timeout": 1800
+},
 ```
