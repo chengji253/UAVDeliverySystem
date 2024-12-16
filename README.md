@@ -39,4 +39,44 @@ chmod +x start_race.sh
 
 3- Put the race_demo into the container of the race_user_sdk_container/home/, then you can use ros to compile and run.
 
+4-Stop the docker file ([stop_race.sh](/shell_file/stop_race.sh))
 
+## Configuration Files
+
+In the configuration folder you can see the car drone and scene parameter settings as well as the order details.
+
+[car config](config/car/config.json)
+
+[drone config](config/drone/drone.json)
+
+[scene config](config/scene/scene.config)
+
+[order config](config/user/config.json)
+
+order four time attributes
+```json
+{
+                "betterTime": 1500,
+                "cargoParam": {
+                    "birthplace": {
+                        "x": 190,
+                        "y": 425,
+                        "z": -16
+                    },
+                    "index": 47,
+                    "name": "测试货物47",
+                    "weight": 3.947
+                },
+                "index": 47,
+                "loadingStationInfo": {
+                    "$ref": "$.taskParam.waybillParamList[46].cargoParam.birthplace"
+                },
+                "orderTime": 300,
+                "targetPosition": {
+                    "x": 490,
+                    "y": 390,
+                    "z": -22
+                },
+                "timeout": 1800
+            },
+```
