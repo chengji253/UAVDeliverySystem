@@ -19,7 +19,7 @@ class threadModule:
         self.vehicle_list = {}
         self.thread_list = {}
 
-    # 创建并启动一个线程
+    # Create a thread for the UAV
     def createThread(self, sn, config):
         if sn in self.thread_list:
             rospy.logerr("Thread already exists")
@@ -35,7 +35,6 @@ class threadModule:
 
 class uavMangageNode:
     def __init__(self):
-        # 初始化ros全局变量
         rospy.init_node('uav_mangage_node')
         rospy.set_param("/rosout", "/home/catkin_ws/logs")
         self.init_uav_num = rospy.get_param('/uav_mangage_node/init_uav_num', 2)
@@ -46,10 +45,10 @@ class uavMangageNode:
         
         self.uav_thread = threadModule()
 
-        # 读取配置文件和信息
+        # Read config file and info
         with open('/config/config.json', 'r') as file:
             self.config = json.load(file)
-        # 提取并存储无人机的序列号列表
+        # Extract and store a list of UAVs info
         self.drone_infos = self.config['taskParam']['droneParamList']
         self.drone_sn_list = [drone['droneSn'] for drone in self.drone_infos]
 
@@ -66,33 +65,33 @@ class uavMangageNode:
 
         rospy.loginfo("UAV mangage node started")
 
-    # 仿真回调函数，获取实时信息
+    # Simulate callback functions to obtain real-time information
     def panoramicInfoCallback(self, panoramic_info):
         self.uavs_phys_status = panoramic_info.drones
 
-    # 指令回调函数
+    # Command callback function
     def commandCallback(self, command):
         if command.type == SelfCommand.DELIVER:
             self.uav_thread.vehicle_list[command.uav_sn].cmd_list.append(command)
 
-    # 状态改变回调函数
+    # Change the state of the UAV, ON_CAR, WAITING_GO
     def stateChangeCallback(self, msg):
         sn = msg.uav_sn
         if sn == '':
             return
         self.uav_thread.vehicle_list[sn].stateChange(UAVState(msg.state))
 
-    # 创建一个无人机
+    # Create a UAV thread
     def createUAV(self, sn):
         self.temp_config["sn"] = sn
         self.uav_thread.createThread(sn, self.temp_config)
 
-    # 获取指定无人机状态
+    # Get the status of the UAV
     def getUAVStatus(self, uav_sn):
         uav_status = next((uav for uav in self.uavs_phys_status if uav.sn == uav_sn), None)
         return uav_status
     
-    # 快速消息赋值
+    # Fast message assignment
     def msgWrite(self, sn, state):
         self_state = SelfUAVState()
         self_state.sn = sn
@@ -104,7 +103,7 @@ class uavMangageNode:
         self_state.remaining_flytime = state['remaining_flytime']
         return self_state
 
-    # 发布集群状态
+    # Publish the swarm state
     def pubSwarmState(self):
         swarm_state = SelfUAVSwarm()
         for k, v in self.uav_thread.vehicle_list.items():

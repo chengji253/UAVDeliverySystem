@@ -31,34 +31,34 @@ class mainPipeline:
         self.uav_cmd_pub = rospy.Publisher('/self_uav_command', SelfCommand, queue_size=100)
         self.car_cmd_pub = rospy.Publisher('/self_car_command', SelfCommand, queue_size=100)
 
-        # 读取配置文件和信息
+        # Read config file and info
         with open('/config/config.json', 'r') as file:
             self.config = json.load(file)
-        # 从配置中提取装载货物点信息
+        # Extract loading point info from the config
         self.loading_cargo_point = self.config['taskParam']['loadingCargoPoint']
-        # 从配置中提取地图边界信息
+        # Extract map boundary info from the config
         self.map_boundary = self.config['taskParam']['mapBoundaryInfo']
 
-        # 从配置中提取卸货站点列表
+        # Extract loading point info from the config
         self.unloading_cargo_stations = self.config['taskParam']['unloadingCargoStationList']
         
-        # 提取并存储车的序列号列表
+        # Extract a list of AGVs info
         self.car_infos = self.config['taskParam']['magvParamList']
         self.car_sn_list = [car['magvSn'] for car in self.car_infos]
 
-        # 提取并存储无人机的序列号列表
+        # Extract a list of UAVs info
         self.drone_infos = self.config['taskParam']['droneParamList']
         self.drone_sn_list = [drone['droneSn'] for drone in self.drone_infos]
 
-        # 存储对等端ID
+        # Store the peer_id
         self.peer_id = self.config['peerId']
-        # 存储任务全局唯一标识符
+        # Store the task_guid
         self.task_guid = self.config['taskParam']['guid']
-        # 初始化运单状态为空
+        # Init the bills state
         self.bills_status = None
-        # 初始化分数为空
+        # Init the score
         self.score = None
-        # 初始化事件列表为空
+        # Init the events
         self.events = None
 
         self.sites_management = {}
@@ -79,20 +79,21 @@ class mainPipeline:
         self.cargo_id_to_pos_dict = {}
 
         self.cargo_expect_time = []
-        # 初始化每个起飞位置的上一个订单位置，避免相同订单位置拥堵
+        # Init the previous order location for each takeoff position 
+        # to avoid congestion at the same order location
+        # you can change the length of the list
         self.last_cargo_pos_id = [-1, -1]
-        # self.last_cargo_pos_id = []
         self.cargo_chose = None
         
+    # Events callback, update bill expect score and store error info
     def panoramicInfoCallback(self, panoramic_info):
         self.bills_status = panoramic_info.bills
         self.score = panoramic_info.score
         if self.events != panoramic_info.events:
             self.events = panoramic_info.events
             if len(self.events) != 0 and self.events[-1].event_type == "EVENT_DELIVERY_SUCCESS":
-                # 解析JSON字符串
                 data = json.loads(self.events[-1].description)
-                # 提取cargoIndex的值
+                # Extract the cargo_id and over_time
                 cargo_id = data['cargoIndex']
                 over_time = data['timestamp']
                 self.updateOverBills(cargo_id, over_time)
@@ -101,6 +102,7 @@ class mainPipeline:
                 rospy.loginfo("Events: " + (self.events[-1].description))
 
 
+    # Command error type info callback
     def cmdRespCallback(self, cmd):
         if cmd.type == 1:
             rospy.logerr("Receive command respose: DRONE_NOT_READY")
@@ -186,7 +188,7 @@ class mainPipeline:
         self.receive_car_state = True
         
     def carSwarmInfoToDict(self):
-        # 将得到的信息储存到字典里面 每一次订阅就刷新一次
+        # Store the obtained information in the dictionary and refresh it every time you subscribe
         self.car_info_dict = {}
         for car_now in self.car_waiting_pickup:
             self.car_info_dict[car_now.sn] = car_now
@@ -200,10 +202,8 @@ class mainPipeline:
             self.car_info_dict[car_now.sn] = car_now        
         
 
-    #####################################################################################################
-    ###### 会用到的函数
-    #####################################################################################################
-    # 发布指令
+    
+    # publish command
     def pubCommand(self, obj, command):
         if obj == "uav":
             self.uav_cmd_pub.publish(command)
@@ -211,6 +211,7 @@ class mainPipeline:
             self.car_cmd_pub.publish(command)
         rospy.sleep(0.5)
     
+    # The following functions are used to generate commands
     def uav_fly_cmd(self, uav_id, route):
         command = SelfCommand()
         command.route = route
@@ -285,13 +286,12 @@ class mainPipeline:
                 self.load_cargo_success_bill_add(uav_id, car.sn)
                 
     def load_cargo_success_bill_add(self, uav_id, car_id):
-        # 只有上货成功后将订单从list中删除
+        # Only load cargo successfully, the order will be deleted from the list
         if self.uav_info_dict[uav_id].have_cargo is True:
-            # and self.uav_info_dict[uav_id].cargo_id == self.cargo_id:
-            # 上货的时候 将uav id映射到unloading_station_id 后根据这个设定航线
+            # When loading, map the uav_id to the unloading_station_id and set the route
             unloading_station_id = self.cargo_id_to_unloading_station_id(self.uav_info_dict[uav_id].cargo_id)
             self.uav_id_to_unloading_station_id[uav_id] = copy.copy(unloading_station_id)
-            # 更新delivery_bills
+            # update delivery_bills
             self.updateDeliveryBills(self.uav_info_dict[uav_id].cargo_id, car_id)
              
     def cargo_id_to_unloading_station_id(self, cargo_id):  
@@ -356,13 +356,13 @@ class mainPipeline:
         return bill_dict
         
     def updateReadyBills(self):
-        current_time = time.time() * 1000 # 毫秒级时间戳
-        # 将可用订单加入ready列表
+        current_time = time.time() * 1000 # Millisecond level timestamp
+        # Add ready bills to the list
         while (self.bills_status[self.bill_cnt].orderTime < current_time):
             self.ready_bills_list.append(self.genBillDict(self.bills_status[self.bill_cnt]))
             self.bill_cnt += 1
 
-        # 更新所有订单的预期分数
+        # Update the expectScore and remainBetterTime for each bill
         for bill in self.ready_bills_list:
             expect_delivery_time = self.expectDeliveryTime(bill["pos_id"], 1) + current_time
             if expect_delivery_time > bill["betterTime"]:
@@ -371,34 +371,34 @@ class mainPipeline:
             else:
                 bill["remainBetterTime"] = bill["betterTime"] - expect_delivery_time
         
-        # 删除预期分数小于或等于5的订单
+        # Delete bills with expectScore less than 5
         self.ready_bills_list = [bill for bill in self.ready_bills_list if bill["expectScore"] > 5]
         
-        # 首先按照expectScore降序排列，然后按照remainBetterTime升序排列
+        # First, sort in descending order according to expectScore, 
+        # and then in ascending order according to remainBetterTime
         self.ready_bills_list.sort(key=lambda x: (-x['expectScore'], x['remainBetterTime']))
 
     def updateDeliveryBills(self, cargo_id, car_id):
         take_off_pos_id = int((int(re.search(r'\d+', car_id).group()) - 1) / 2)
-        # 使用循环遍历 self.ready_bills_list 并修改原列表 
         for bill in self.ready_bills_list[:]: 
             if bill["index"] == cargo_id:
-                self.ready_bills_list.remove(bill)  # 从原列表中移除
+                self.ready_bills_list.remove(bill)  # remove from ready list
                 bill["take_off_pos_id"] = take_off_pos_id
-                self.delivery_bills_dict[bill["index"]] = bill  # 添加到delivery列表             
-                self.last_cargo_pos_id.append(bill["pos_id"])  # 将货物位置id加入队列
+                self.delivery_bills_dict[bill["index"]] = bill  # add to delivery list           
+                self.last_cargo_pos_id.append(bill["pos_id"])  # add cargo pos id
                 self.last_cargo_pos_id.pop(0)
                 rospy.loginfo("Begin delivery cargo %s, expected score: %s, from pos %s to pos %s" % (bill["index"], bill["expectScore"], bill["take_off_pos_id"], bill["pos_id"]))
                 break
     
     def updateOverBills(self, cargo_id, over_time):
-        # 从delivery字典中删除，添加到over字典中
+        # Delete from delivery list and add to over list
         self.over_bills_dict[cargo_id] = self.delivery_bills_dict[cargo_id]
         del self.delivery_bills_dict[cargo_id]
-        # 如果分数小于100分，更新订单期望时间
+        # if the score is less than 100, update the expect time
         if self.events[-1].score < 100:
             self.updateCargoExpectTime(cargo_id, over_time)
     
-    # 无人机送餐预计时间
+    # The UAV expect delivery time
     def expectDeliveryTime(self, pos_id, take_off_pos_id):
         expect_take_cargo_time = 10 * 1000
         expect_fly_time = self.cargo_expect_time[pos_id][take_off_pos_id] * 1000
@@ -406,7 +406,6 @@ class mainPipeline:
 
     def updateCargoExpectTime(self, cargo_id, over_delivery_time):
         bill = self.over_bills_dict[cargo_id]
-        # 根据期望反推拿到cargo的时间
         pos_id = self.over_bills_dict[cargo_id]["pos_id"]
         begin_delivery_time = float(bill["timeout"]) - (bill["expectScore"] / 100.0 * float(bill["timeout"] - bill["betterTime"])) - self.cargo_expect_time[pos_id][1] * 1000 - 10 * 1000      
         delivery_time = float(over_delivery_time - begin_delivery_time) / 1000.0
@@ -414,7 +413,7 @@ class mainPipeline:
         new_time = 0.3 * self.cargo_expect_time[pos_id][take_off_pos_id] + 0.7 * delivery_time
         rospy.loginfo("begin_delivery_time: %s, over_delivery_time: %s." % (begin_delivery_time, over_delivery_time))
         rospy.loginfo("from pos %s to pos %s expect time update from %s to %s." % (take_off_pos_id, pos_id, self.cargo_expect_time[pos_id][1], new_time))
-        # 更新期望时间为平均值
+        # update expect time
         self.cargo_expect_time[pos_id][take_off_pos_id] = new_time
     
     def getBestCargo(self):
@@ -422,16 +421,16 @@ class mainPipeline:
         if len(self.ready_bills_list) == 0:
             self.cargo_chose = None
         else:
-            # 选取与之前pos_id不相同的订单，如果没有就选取第一个
+            # Select an order with a different pos id from the previous one. If not, select the first one
             self.cargo_chose = self.ready_bills_list[0]
             for order in self.ready_bills_list:
                 if order['pos_id'] not in self.last_cargo_pos_id:
                     self.cargo_chose = order
                     break
         return self.cargo_chose
-        
+    
+    # Project start function
     def main_one(self):
-        # 状态机开始运行
         rospy.sleep(10.0)
         self.init_para()
         
@@ -449,7 +448,7 @@ class mainPipeline:
         
         while not rospy.is_shutdown():
             iteration += 1
-            # 计算总运行时间并每分钟打印一次
+            # Interval printing information
             if iteration % 100 == 0 and iteration != 0 and len(self.ready_bills_list) != 0:
                 current_time = rospy.get_time()
                 elapsed_time = current_time - start_time
@@ -469,8 +468,7 @@ class mainPipeline:
 
             self.load_cargo_car_update()
             
-            # 处理飞机部分
-            # 更新飞机信息
+            # Update the UAV info
             self.air_traffic_scheduler.update_uav_info( \
                                     self.uav_info_dict, self.uav_ready,
                                     self.uav_waiting_go, self.uav_waiting_back,
@@ -511,13 +509,12 @@ class mainPipeline:
         rospy.loginfo("mission completed !!!")
     
     def init_para(self):
-        # 初始化工作区位置
         self.loading_pos = Position(
                 self.loading_cargo_point['x'],
                 self.loading_cargo_point['y'],
                 self.loading_cargo_point['z'])
         
-    
+    # Let the AGVs move to init pos
     def car_go_initial_pos(self):
         rospy.loginfo("car_go_initial_pos")
         # self.air_traffic_manage.init_info()
@@ -526,7 +523,7 @@ class mainPipeline:
         
         car_cmd = {}
         
-        # 第一辆车去1点
+        # 1st AGV
         car_now_id = self.car_sn_list[0]
         start_pos = self.car_info_dict[car_now_id].pos
         mid_pos = Position(4  + 180, 10 + 420, -16)
@@ -534,7 +531,7 @@ class mainPipeline:
         route = [start_pos, mid_pos, end_pos]
         car_cmd[car_now_id] = {'cmd': 'MOVE_TO_TARGET', 'route': route}
         
-        # 第2辆车去2点
+        # 2nd AGV
         car_now_id = self.car_sn_list[1]
         start_pos = self.car_info_dict[car_now_id].pos
         mid_1 = Position(4  + 180, 15 + 420, -16)
@@ -544,7 +541,7 @@ class mainPipeline:
         route = [start_pos, mid_1, mid_2, end_pos]
         car_cmd[car_now_id] = {'cmd': 'MOVE_TO_TARGET', 'route': route}
         
-        # 第3辆车去3点
+        # 3rd AGV
         car_now_id = self.car_sn_list[2]
         start_pos = self.car_info_dict[car_now_id].pos
         mid_1 = Position(3+180, 24+420, -16)
@@ -553,7 +550,7 @@ class mainPipeline:
         route = [start_pos, mid_1, mid_2, end_pos]
         car_cmd[car_now_id] = {'cmd': 'MOVE_TO_TARGET', 'route': route}
         
-        # 第4辆车去4点
+        # 4th AGV
         car_now_id = self.car_sn_list[3]
         start_pos = self.car_info_dict[car_now_id].pos
         mid_pos = Position(18+180, 15+420, -16)
@@ -561,7 +558,7 @@ class mainPipeline:
         route = [start_pos, mid_pos, end_pos]
         car_cmd[car_now_id] = {'cmd': 'MOVE_TO_TARGET', 'route': route}
 
-        # 第5辆车去5点
+        # 5th AGV
         car_now_id = self.car_sn_list[4]
         start_pos = self.car_info_dict[car_now_id].pos
         mid_1 = Position(10+180, 19+420, -16)
@@ -570,7 +567,7 @@ class mainPipeline:
         route = [start_pos, mid_1, end_pos]
         car_cmd[car_now_id] = {'cmd': 'MOVE_TO_TARGET', 'route': route}
 
-        # 第6辆车去6点
+        # 6th AGV
         car_now_id = self.car_sn_list[5]
         start_pos = self.car_info_dict[car_now_id].pos
         mid_pos = Position(10+180, 25+420, -16)

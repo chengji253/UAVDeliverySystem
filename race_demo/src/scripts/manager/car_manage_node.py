@@ -21,7 +21,7 @@ class threadModule:
         self.vehicle_list = {}
         self.thread_list = {}
 
-    # 创建并启动一个线程
+    # Create a thread for the AGV
     def createThread(self, sn, config):
         if sn in self.thread_list:
             rospy.logerr("Thread already exists")
@@ -37,7 +37,6 @@ class threadModule:
 
 class carMangageNode:
     def __init__(self):
-        # 初始化ros全局变量
         rospy.init_node('car_mangage_node')
         rospy.set_param("/rosout", "/home/catkin_ws/logs")
         self.init_car_num = rospy.get_param('/car_mangage_node/init_car_num', 2)
@@ -49,10 +48,10 @@ class carMangageNode:
         
         self.car_thread = threadModule()
 
-        # 读取配置文件和信息
+        # Read config file and info
         with open('/config/config.json', 'r') as file:
             self.config = json.load(file)
-        # 提取并存储车的序列号列表
+        # Extract and store a list of AGVs info
         self.car_infos = self.config['taskParam']['magvParamList']
         self.car_sn_list = [car['magvSn'] for car in self.car_infos]
 
@@ -74,12 +73,12 @@ class carMangageNode:
 
         rospy.loginfo("Car mangage node started")
     
-    # 仿真回调函数，获取实时信息
+    # Simulate callback functions to obtain real-time information
     def panoramicInfoCallback(self, panoramic_info):
         self.car_phys_status = panoramic_info.cars
         self.uavs_phys_status = panoramic_info.drones
 
-    # 指令回调函数
+    # Command callback function
     def commandCallback(self, command):
         if command.type == SelfCommand.LOAD_CARGO \
         or command.type == SelfCommand.UAV_CHARGE \
@@ -91,17 +90,17 @@ class carMangageNode:
     def uavSwarmCallback(self, swarm):
         self.ready_uav_list = swarm.READY
 
-    # 创建一个无人车
+    # Create a thread for the AGV
     def createCar(self, sn):
         self.temp_config["sn"] = sn
         self.car_thread.createThread(sn, self.temp_config)
 
-    # 获取指定无人机状态
+    # Get the status of the UAV
     def getUAVStatus(self, uav_sn):
         uav_status = next((uav for uav in self.uavs_phys_status if uav.sn == uav_sn), None)
         return uav_status
     
-    # 获取指定无人车状态
+    # Get the status of the AGV
     def getCarStatus(self, car_sn):
         car_status = next((car for car in self.car_phys_status if car.sn == car_sn), None)
         return car_status
@@ -122,7 +121,7 @@ class carMangageNode:
         self_state.remaining_runtime = state['remaining_runtime']
         return self_state
     
-     # 发布集群状态
+     # Publish the swarm state
     def pubSwarmState(self):
         swarm_state = SelfCarSwarm()
         for k, v in self.car_thread.vehicle_list.items():
