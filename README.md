@@ -50,14 +50,14 @@ chmod +x start_race.sh
 ```
 
 ## Core code
-In the src, there are our code code.
+In the `./race_demo/src`, there are our code code.
 
-<img src="/pic/code.jpg" width="30%">
+<img src="/pic/code.png" width="30%">
 
 ## msg
-In the \msg, it shows the type of message published on the topic
+In the `./race_demo/msg`, it shows the type of message published on the topic
 
-<img src="/pic/msg.jpg" width="30%">
+<img src="/pic/msg.png" width="30%">
 
 ## Configuration Files
 
