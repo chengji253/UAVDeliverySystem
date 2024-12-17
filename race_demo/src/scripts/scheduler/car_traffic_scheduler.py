@@ -19,41 +19,41 @@ from race_demo.msg import UserCmdResponse
 
 
 class Car_traffic_scheduler:
-    # 地面交通管理类
     
     def __init__(self):
         
         self.para = Para()
         
-        # 无人机机场位置 和 上货的位置
+        # Location of UAVs in airport and unloading location
         self.drone_station_origin = self.para.drone_station_origin
         # self.work_station_pos = [190, 425, -16]
         self.work_station_pos = self.para.work_station_pos
         self.drone_store_pos = self.para.drone_store_pos
         
         
-        # 所有飞行路径的信息 
-        # 根据路径id 查询 path 长短 去还是回的路 有哪些飞机分别在哪个位置
+        # Information about all flight paths. 
+        # Look up the length of the path according to the path id, whether it's the way to or from, 
+        # which planes are in which locations.
         self.flight_path_info = {}
         
-        # 根据 卸货点id 找到去 和 回的路径id
+        # Find the path ids to and from the unloading point id.
         self.release_cargo_idx_to_path = {}
         
-        # 降落点信息 有哪些降落点可以使用 
+        # Landing point info and which landing points are available
         self.land_point = {}
         
-        # 起飞点信息 有哪些起飞点可以使用
+        # Takeoff point info and which takeoff points are available
         self.take_off_point = {}
         
-        # 卸货点的位置
+        # Location of unloading points
         self.release_cargo_pos = {}
         
-        # 工作区现在是否有车 有车就是True 没有就是False
+        # Is there a AGV in the workspace now? If there is a AGV, it's True. If there isn't, it's False.
         self.work_station_free = True
-        # 当前占据工作区的car id
+        # The AGV id currently occupying the workspace
         self.work_station_car_id = None
         
-        # 临界区是否是free
+        # Is the critical nei free
         self.nei_pos_free = True
         self.nei_pos_car_id = None
         
@@ -78,7 +78,7 @@ class Car_traffic_scheduler:
         
     def init_info(self):
         
-        # 初始化 空中管理类的信息
+        # Initialization Air management class information
         self.take_off_p_1 = self.para.take_off_p_1
         self.take_off_p_2 = self.para.take_off_p_2
         self.take_off_p_3 = self.para.take_off_p_3
@@ -107,18 +107,6 @@ class Car_traffic_scheduler:
         self.car_id = ['SIM-MAGV-0001', 'SIM-MAGV-0002', 'SIM-MAGV-0003',
                        'SIM-MAGV-0004', 'SIM-MAGV-0005', 'SIM-MAGV-0006']
         
-        
-        # # 标志等待位置是否free
-        # self.take_off_p_car_id = None
-        # self.take_off_p_free = True
-        
-        # self.take_off_wait_1_car_id = None
-        # self.take_off_wait_1_free = True
-        # self.take_off_wait_1_pos = self.para.take_off_wait_1
-        
-        # self.take_off_wait_2_car_id = None
-        # self.take_off_wait_2_free = True
-        # self.take_off_wait_2_pos = self.para.take_off_wait_2
 
     def update_uav_info(self, uav_info_dict, uav_ready,
                         uav_waiting_go, uav_waiting_back,
@@ -137,20 +125,13 @@ class Car_traffic_scheduler:
                             car_waiting_pickup, car_running,
                             car_waiting_go_aw, car_waiting_go_gw,
                             car_waiting_uav_work):
-        # 根据总节点的信息 更新当下car信息 从而完成调度
+        # Update the current AGV information based on the total node information to complete the scheduling.
         self.car_info = car_info_dict
         self.car_waiting_pickup = car_waiting_pickup
         self.car_running = car_running                              
         self.car_waiting_go_aw = car_waiting_go_aw
         self.car_waiting_go_gw = car_waiting_go_gw
         self.car_waiting_uav_work = car_waiting_uav_work
-        # rospy.loginfo("car_info_dict update")
-        # rospy.loginfo(car_waiting_pickup)
-        # rospy.loginfo(car_running)
-        # rospy.loginfo(car_waiting_go_aw)
-        # rospy.loginfo(car_waiting_go_gw)
-        # rospy.loginfo(car_waiting_uav_work)
-        # rospy.loginfo(car_info_dict)
 
     def get_info_from_air(self, uav_go_flight_time):
         self.uav_go_flight_time = uav_go_flight_time
@@ -227,11 +208,12 @@ class Car_traffic_scheduler:
                 return False 
 
         if self.nei_pos_car_id is not None:
-            # 如果有car指定要进来 
-            # rospy.loginfo('car is cmd to come! nei pos is occupied')
+            # If a AGV is specified to come in 
+            # rospy.loginfo('AGV is cmd to come! nei pos is occupied')
             car_id = self.nei_pos_car_id
             car_pos = self.car_info[car_id].pos
-            # 进来的这个车 有飞机 并且上货 还走远了 那么就意味着可以进下一个车
+            # The AGV that's coming in has an UAV, and it's loaded, and it's far away, 
+            # so that means it's ready for the next AGV.
             if car_pos.x > self.para.neighbor_pos.x + 0.1:
                 dis_n = self.dis_cal(car_pos, nei_pos)
                 if dis_n > 0.6:
@@ -266,8 +248,8 @@ class Car_traffic_scheduler:
                 return False
         
         if self.work_station_car_id is not None:
-            # 如果有car指定要进来 
-            # rospy.loginfo('car is cmd to come! work station is occupied')
+            # If a AGV is specified to come in 
+            # rospy.loginfo('AGV is cmd to come! work station is occupied')
             car_id = self.work_station_car_id
             car_pos = self.car_info[car_id].pos
             dis_n = self.dis_cal(car_pos, work_pos)
@@ -286,7 +268,7 @@ class Car_traffic_scheduler:
         land_pos_car_set = set()
         wait_pos_car_set = set()
         work_wait_pos_car_set = set()
-        # 找到正处于land pos wait pos上 且处于car_waiting_pickup状态的车
+        # Find the AGV that's in the land pos wait pos and in the car_waiting_pickup state.
         dis_c = 0.8
         for key, car in self.car_info.items():
             car_id = key
@@ -391,8 +373,8 @@ class Car_traffic_scheduler:
 
 
     def judge_wait_take_off_pos(self):
-        # 如果此时pos被car 指定要来 那么就是False
-        # 如果car要离开 car id 赋值为none 此时就看dis
+        # If the pos is assigned to come by the AGV, then it's false.
+        # If the AGV is leaving and the AGV id is assigned to none, then it's dis.
         if self.take_off_wait_1_car_id is not None:
             
             self.take_off_wait_1_free = False
@@ -415,7 +397,7 @@ class Car_traffic_scheduler:
                 if dis > 0.5:
                     self.take_off_wait_2_free = True
 
-        # 对于起飞点的判断是一样的
+        # It's the same for takeoff points
         if self.take_off_p_car_id is not None:
             self.take_off_p_free = False
         else:
@@ -495,8 +477,8 @@ class Car_traffic_scheduler:
             return False
     
     def choose_urgent_car_to_go_nei(self, work_wait_pos_car_set):
-        # 选择line2 3中紧急的车 进入到 nei pos
-        # 选择接到飞机中 最紧急的车去
+        # Select the most urgent AGV in line 2 3 to go to nei pos
+        # Select the most urgent vehicle on the UAV to go
         car_land_pressure = {}
         for car in self.car_waiting_go_gw:
             car_id = car.sn  
@@ -511,7 +493,7 @@ class Car_traffic_scheduler:
                     car_land_pressure[car_id]['uav_time'][uav_id] -= 8
 
 
-        # 找到所有uav_time中的最小值
+        # Find the smallest of all uav_times
         all_uav_times = [time for uav_times in car_land_pressure.values() \
                         for time in uav_times['uav_time'].values()]
         
@@ -526,7 +508,7 @@ class Car_traffic_scheduler:
         
         min_uav_time = min(all_uav_times)
 
-        # 找到最小uav_time对应的key
+        # Find the key corresponding to the minimum uav_time
         min_key = None
         for key, value in car_land_pressure.items():
             if min_uav_time in value['uav_time'].values():
@@ -541,9 +523,9 @@ class Car_traffic_scheduler:
         return min_key
     
     def choose_urgent_car_to_go_work_station(self, work_wait_pos_car_set, nei_pos_car_set):
-        # 选择最紧急的车 进入到工作台
-        # 对于line1 要在work wait pos上
-        # 对于line 23 要在nei pos上
+        # Select the most urgent AGV to enter the workbench
+        # For line 1, go to work wait pos.
+        # For line 23, it's on the nei pos.
         car_land_pressure = {}
         for car in self.car_waiting_go_gw:
             car_id = car.sn
@@ -559,7 +541,7 @@ class Car_traffic_scheduler:
                     for uav_id, value in car_land_pressure[car_id]['uav_time'].items():
                         car_land_pressure[car_id]['uav_time'][uav_id] -= 8
 
-        # 找到所有uav_time中的最小值
+        # Find the smallest of all uav_times
         all_uav_times = [time for uav_times in car_land_pressure.values() \
                         for time in uav_times['uav_time'].values()]
         
@@ -574,7 +556,7 @@ class Car_traffic_scheduler:
                     return car_id
         
         min_uav_time = min(all_uav_times)
-        # 找到最小uav_time对应的key
+        # Find the key corresponding to the minimum uav_time
         min_key = None
         for key, value in car_land_pressure.items():
             if min_uav_time in value['uav_time'].values():
@@ -589,14 +571,14 @@ class Car_traffic_scheduler:
         return min_key
     
     def choose_have_uav_wait_car(self, work_wait_pos_car_set):
-        # 选择接到飞机中 最紧急的车去
+        # Chosen to get the most urgent AGV on the UAV.
         if len(self.car_waiting_go_gw) == 1:
             return  self.car_waiting_go_gw[0].sn      
         else:
             car_land_pressure = {}
             for car in self.car_waiting_go_gw:
                 
-                # 有的车接到了飞机 但是并没有处于work wait pos的位置上
+                # Some of the AGV are receiving airplanes, but they're not in work wait pos.
                 car_id = car.sn
                 if car_id not in work_wait_pos_car_set:
                     continue
@@ -608,7 +590,7 @@ class Car_traffic_scheduler:
                     car_land_pressure[car_id] = self.car_land_pressure[3]
             
             
-            # 找到所有uav_time中的最小值
+            # Find the minimum of all uav_times
             all_uav_times = [time for uav_times in car_land_pressure.values() \
                             for time in uav_times['uav_time'].values()]
             
@@ -618,7 +600,7 @@ class Car_traffic_scheduler:
             
             min_uav_time = min(all_uav_times)
 
-            # 找到最小uav_time对应的key
+            # Find the key corresponding to the minimum uav_time
             min_key = None
             for key, value in car_land_pressure.items():
                 if min_uav_time in value['uav_time'].values():
@@ -633,7 +615,7 @@ class Car_traffic_scheduler:
         return min_key
     
     def find_line_another_car_id(self, car_id):
-        # 返回line中给定car id的另一个id
+        # Returns another id for the given AGV id in line
         line_num = self.judge_car_on_line_number(car_id)
         if line_num == 1:
             if car_id == self.line_1_car_id_list[0]:
@@ -654,7 +636,7 @@ class Car_traffic_scheduler:
             return None
         
     def judge_gw_car_on_work_wait_pos(self, work_wait_pos_car_set):
-        # 判断是否有处于gw状态的车 且正在 wait work pos上
+        # Determine if there's a AGV in gw state that's on the wait work pos #
         if len(self.car_waiting_go_gw) == 0:
             return False
         else:
@@ -663,7 +645,7 @@ class Car_traffic_scheduler:
                 if car_id in work_wait_pos_car_set:
                     return True
     def judge_gw_car_on_work_wait_pos_or_nei_pos(self, work_wait_pos_car_set, nei_pos_car_set):
-        # 判断是否有处于gw状态的车 line1且正在 wait work pos上 line23 位于nei pos上
+        # Determine if there is a AGV in gw state line1 and is on wait work pos line23 is on nei pos
         if len(self.car_waiting_go_gw) == 0:
             return False
         else:
@@ -678,7 +660,7 @@ class Car_traffic_scheduler:
             return False
         
     def judge_pickup_car_on_work_wait_pos(self, work_wait_pos_car_set):
-        # 判断是否有处于pick up状态的车 且正在 wait work pos上
+        # Determine if there's a AGV that's in a pick up state and is on a wait work pos.
         if len(self.car_waiting_pickup) == 0:
             return False
         else:
@@ -758,7 +740,7 @@ class Car_traffic_scheduler:
     
     def judge_car_is_going_from_work_wait_pos_to_neighbor_pos(self, car_id_n):
         rospy.loginfo("judge_car_is_going_from_work_wait_pos_to_neighbor_pos")
-        # 判断line23上 是否有小车正在从work wait pos到neighbor pos的这条线上
+        # Determine if any AGV on line23 are on the line from work wait pos to neighbor pos.
         car_list_23 = self.line_2_car_id_list + self.line_3_car_id_list
         redund = 0.7
         
@@ -790,8 +772,8 @@ class Car_traffic_scheduler:
             return False
         
     def judge_car_is_going_from_land_pos_to_work_wait_pos(self, car_id):
-        # 从land pos到work wait pos的这条线上是否有car 
-        # 有就返回True 没有就返回False
+        # Is there a AGV on the line from land pos to work wait pos? 
+        # True if there is, False if there isn't.
         another_car_id = self.find_line_another_car_id(car_id)
         line_number = self.judge_car_on_line_number(car_id)
         
@@ -861,7 +843,7 @@ class Car_traffic_scheduler:
             rospy.loginfo("回收飞机后 立即离开工作区 leave_work_station_car_id=" + str(self.leave_work_station_car_id))
             car_id = self.leave_work_station_car_id
             car_now_pos = self.car_info[car_id].pos   
-            # 对于line1来说 需要判断一下 take off pos是否有飞机
+            # For line 1, you need to determine if there's an UAV in the take off pos.
             if car_id in self.line_1_car_id_set:
                 another_car_id = self.find_line_another_car_id(car_id)
                 mid_1 = Position(15  + 180, 5 + 420, -16)
@@ -883,20 +865,9 @@ class Car_traffic_scheduler:
                     cmd_res[car_id] = {'cmd':'MOVE_TO_TARGET', 'route':route}                     
 
             elif car_id in self.line_2_car_id_set:
-                # another_car_id = self.find_line_another_car_id(car_id)
-                # if self.car_info[another_car_id].have_uav is True:
-                #     uav_id = self.car_info[another_car_id].uav_sn
-                #     if self.uav_info_dict[uav_id].have_cargo is False:
-                #         rospy.loginfo("line 2 直接去land pos")
-                #         mid_1 = Position(19  + 180, 5 + 420, -16)
-                #         mid_2 = Position(19  + 180, 17 + 420, -16)
-                #         car_goal_pos  = self.land_p2
-                #         route = [car_now_pos, mid_1, mid_2, car_goal_pos]
-                #         cmd_res[car_id] = {'cmd':'MOVE_TO_TARGET', 'route':route}                          
-                # else:
                 bool_can_go = True
                 another_car_id = self.find_line_another_car_id(car_id)
-                # 判断一下 另一个车有飞机 且飞机有货 就不能出发
+                # Judging by the fact that there's a UAV in the other AGV and it's loaded, we can't go.
                 if self.car_info[another_car_id].have_uav is True:
                     uav_id = self.car_info[another_car_id].uav_sn
                     if self.uav_info_dict[uav_id].have_cargo is True:
@@ -909,17 +880,6 @@ class Car_traffic_scheduler:
                     route = [car_now_pos, mid_1, mid_2, car_goal_pos]
                     cmd_res[car_id] = {'cmd':'MOVE_TO_TARGET', 'route':route}  
             elif car_id in self.line_3_car_id_set:
-                # another_car_id = self.find_line_another_car_id(car_id)
-                # if self.car_info[another_car_id].have_uav is True:
-                #     uav_id = self.car_info[another_car_id].uav_sn
-                #     if self.uav_info_dict[uav_id].have_cargo is False:
-                #         rospy.loginfo("line 3 直接去land pos")
-                #         mid_1 = Position(19  + 180, 5 + 420, -16)
-                #         mid_2 = Position(19  + 180, 25 + 420, -16)
-                #         car_goal_pos  = self.land_p3
-                #         route = [car_now_pos, mid_1, mid_2, car_goal_pos]
-                #         cmd_res[car_id] = {'cmd':'MOVE_TO_TARGET', 'route':route}                 
-                # else:
                 rospy.loginfo("line 3 的去takeoff pos")
                 mid_1 = Position(19  + 180, 5 + 420, -16)
                 mid_2 = Position(19  + 180, 19 + 420, -16)
@@ -928,7 +888,7 @@ class Car_traffic_scheduler:
                 cmd_res[car_id] = {'cmd':'MOVE_TO_TARGET', 'route':route} 
 
 
-        # 1-飞机起飞后车回到 wait pos
+        # 1 - The AGV returns to wait pos after the UAV takes off
         if take_off_car_id_1 is not None:
             rospy.loginfo("飞机起飞后车回到 wait pos")
             car_id = take_off_car_id_1
@@ -960,9 +920,9 @@ class Car_traffic_scheduler:
         
         # 2- 每一个line上 如果land pos上车空了 那么处于wait pos上的车 马上去到land pos的位置
         car_id_list_1 = self.line_1_car_id_list
-        # line1 上 land pos空了 后面的车 补上
-        # 对于line1 而言 land pos 和work wait pos都空了 后面的车才能上前
-        # 如果car 0位于 wait pos上 且 car 1 既不在land pos也不在work wait pos上
+        # On line 1, the land pos is empty, and the AGV behind it fills in. #
+        # For line 1, both land pos and work wait pos are empty before the AGV behind can move up. #
+        # If AGV 0 is in the wait pos and AGV 1 is neither in the land pos nor the work wait pos #
         if car_id_list_1[0] in wait_pos_car_set and \
                 car_id_list_1[1] not in land_pos_car_set:
             # rospy.loginfo("line1 上 land pos空了 后面的车 补上")
@@ -981,7 +941,7 @@ class Car_traffic_scheduler:
             cmd_res[car_id] = {'cmd':'MOVE_TO_TARGET', 'route':route}              
 
         car_id_list_2 = self.line_2_car_id_list
-        # line2 上 land pos空了 后面的车 补上
+        # Line 2 land pos is empty. The AGV behind it, fill it in.
         if car_id_list_2[0] in wait_pos_car_set and car_id_list_2[1] not in land_pos_car_set:
             # rospy.loginfo("line2 上 land pos空了 后面的车 补上")
             car_id = car_id_list_2[0] 
@@ -998,7 +958,7 @@ class Car_traffic_scheduler:
             cmd_res[car_id] = {'cmd':'MOVE_TO_TARGET', 'route':route}   
 
         car_id_list_3 = self.line_3_car_id_list
-        # line3 上 land pos空了 后面的车 补上
+        # Line 3, land pos is empty. The AGV behind it, fill it in.
         if car_id_list_3[0] in wait_pos_car_set and car_id_list_3[1] not in land_pos_car_set:
             # rospy.loginfo("line3 上 land pos空了 后面的车 补上")
             car_id = car_id_list_3[0] 
@@ -1015,14 +975,14 @@ class Car_traffic_scheduler:
             cmd_res[car_id] = {'cmd':'MOVE_TO_TARGET', 'route':route}   
                 
         
-        # 3-上货后 尽快前往 起飞点
+        # 3- Once loaded, proceed to the takeoff point as soon as possible.
         if len(self.car_waiting_go_aw) != 0:
             rospy.loginfo("航空区的尽快出发")
             for car in self.car_waiting_go_aw:
                 car_id = car.sn
                 car_now_pos = car.pos
                 
-                # 对于line1来说 需要判断一下 take off pos是否有飞机
+                # For line 1, you need to determine if there's an UAV in the take off pos.
                 if car_id in self.line_1_car_id_set:
                     another_car_id = self.find_line_another_car_id(car_id)
                     mid_1 = Position(15  + 180, 5 + 420, -16)
@@ -1043,7 +1003,7 @@ class Car_traffic_scheduler:
                 elif car_id in self.line_2_car_id_set:
                     bool_can_go = True
                     another_car_id = self.find_line_another_car_id(car_id)
-                    # 判断一下 另一个车有飞机 且飞机有货 就不能出发
+                    # Judging by the fact that there's a UAV in the other AGV and it's loaded, we can't go.
                     if self.car_info[another_car_id].have_uav is True:
                         uav_id = self.car_info[another_car_id].uav_sn
                         if self.uav_info_dict[uav_id].have_cargo is True:
@@ -1065,11 +1025,11 @@ class Car_traffic_scheduler:
                     cmd_res[car_id] = {'cmd':'MOVE_TO_TARGET', 'route':route}   
                    
         
-        # 4-接到飞机后 先去work wait pos 等待工作区空闲
-        # 找到处于gw状态 且位于land pos上的车 
-        # 这里还需要判断一下 work wait pos 是否有空
+        # 4 - When you get the UAV, go to work wait pos and wait for the workspace to become free.
+        # Find the AGV that's in the gw state and in the land pos. # 
+        # Here we need to determine if the work wait pos is free.
         if len(self.car_waiting_go_gw) != 0:
-            # 每一个车 得到降落的飞机都都需要判断是否要去 等待进入工作区
+            # Every vehicle that gets to land an UAV needs to determine if it's going to wait to enter the workspace.
             for car in self.car_waiting_go_gw:
                 car_id = car.sn
                 car = self.car_info[car_id]
@@ -1077,12 +1037,12 @@ class Car_traffic_scheduler:
                 car_now_pos = car.pos
                 # rospy.loginfo("有飞机降落到车上 car id=" + str(car_id))
                 
-                # 如果车属于line1 车在land pos上
+                # If the AGV belongs to line 1, the AGV is on land pos.
                 if car_id in self.line_1_car_id_set and car_id in land_pos_car_set:
                     another_car_id = self.find_line_another_car_id(car_id)
                     another_car = self.car_info[another_car_id]
                     
-                    # 如果另一车没有在work wait pos上 那就直接去work wait pos
+                    # If the other AGV isn't on the work wait pos, then it goes straight to the work wait pos
                     # self.judge_car_is_going_from_land_pos_to_work_wait_pos(car_id) is False
                     if self.work_wait_p1_free is True:
                         rospy.loginfo("如果另一车没有在work wait pos上 那就直接去work wait pos")
@@ -1090,24 +1050,26 @@ class Car_traffic_scheduler:
                         route = [car_now_pos, car_goal_pos]
                         cmd_res[car_id] = {'cmd':'MOVE_TO_TARGET', 'route':route} 
                     
-                    # 如果另一车是pick up状态 且已经没有ready的无人机
-                    # 此时就会卡主  所以应该去解决这个卡主的状态
-                    # 判断的4个条件：
-                    # 1-前面确实有车 2-这个车没有飞机 
-                    # 3-另一车处于work wait pos上 4-工作区是free
-                    # 5-已经没有车 ready 这条是否需要加入 有待考虑
+                    # If the other vehicle is picked up and there are no more ready drones.
+                    # It's going to get stuck, so it's time to fix the stuck state. 
+                    # There are 4 conditions for judgment:
+                    # 1 - there is a AGV in front of you
+                    # 2 - this AGV doesn't have an UAV.
+                    # 3- Another vehicle is in a work wait pos
+                    # 4- The workspace is free # 5- No more vehicles ready
+                    # 5-There are no more AGV ready, so I'm not sure if I need to add this one.
                     elif self.work_wait_p1_free is False \
                     and another_car.have_uav is False \
                     and another_car_id in work_wait_pos_car_set \
                     and self.work_station_free is True:
                         rospy.loginfo("当前car直接去工作区--前面那个车回到land pos")
-                        # 当前这个car 直接去工作区                        
+                        # The current AGV goes directly to the workspace.                        
                         car_goal_pos = self.work_station_pos
                         mid_1 = Position(10 + 180, 11 + 420, -16)
                         route = [car_now_pos, mid_1, car_goal_pos]
                         cmd_res[car_id] = {'cmd':'MOVE_TO_TARGET', 'route':route} 
                         self.work_station_car_id = car_id
-                        # 前面那个车 回到land pos
+                        # The AGV in front of you, go back to land pos.
                         another_car_pos = another_car.pos
                         another_car_goal_pos = self.land_p1
                         mid_2 = Position(9 + 180, 7 + 420, -16)
@@ -1115,7 +1077,7 @@ class Car_traffic_scheduler:
                         ano_route = [another_car_pos, mid_2, mid_3, another_car_goal_pos]
                         cmd_res[another_car_id] = {'cmd':'MOVE_TO_TARGET', 'route':ano_route}  
                 
-                # 1-处于line2上, 2-车在land pos上, 3-没有车从land pos到work wait pos
+                # 1- on line2, 2- AGV on land pos, 3- no AGV from land pos to work wait pos
                 # self.judge_car_is_going_from_land_pos_to_work_wait_pos(car_id) is False
                 elif car_id in self.line_2_car_id_set and car_id in land_pos_car_set \
                 and self.work_wait_p2_free is True:
@@ -1126,7 +1088,7 @@ class Car_traffic_scheduler:
                     cmd_res[car_id] = {'cmd':'MOVE_TO_TARGET', 'route':route}
                     self.work_wait_p2_car_id = car_id
                 
-                # 1-处于line3上, 2-车在land pos上, 3-没有车从land pos到work wait pos
+                # 1- on line 3, 2- AGV on land pos, 3- no AGV from land pos to work wait pos
                 elif car_id in self.line_3_car_id_set and car_id in land_pos_car_set \
                 and self.work_wait_p3_free is True:
                     rospy.loginfo("line3 在land pos上 直接去work wait pos3")
@@ -1136,8 +1098,8 @@ class Car_traffic_scheduler:
                     cmd_res[car_id] = {'cmd':'MOVE_TO_TARGET', 'route':route}
                     self.work_wait_p3_car_id = car_id
             
-                # 处于等待进入区的车, 23-line的车 判断是否需要进入临界区
-                # 如果车属于line23, 车在work wait pos上, 没有车正在去neighbor pos
+                # AGV that are in the waiting zone, AGV in line 23, determine if they need to enter the critical zone.
+                # If the AGV belongs to line 23, the AGV is in the work wait pos, no AGV is going to the neighbor pos.
                 if self.judge_line23car_on_work_wait_pos(work_wait_pos_car_set) is True \
                 and self.nei_pos_free is True:
                     rospy.loginfo("处于等待进入区的车, 2 3-line的车 判断是否需要进入临界区")
@@ -1148,7 +1110,7 @@ class Car_traffic_scheduler:
                     rospy.loginfo("car_id = " + str(car_id))
                     rospy.loginfo("route=" +  str(route))
 
-        # 5- 处于land pos上 且处于pick up状态的飞机 
+        # 5- UAV in land pos and in pick up mode 
         if len(self.car_waiting_pickup) != 0:
             rospy.loginfo("处于pick up状态的飞机")
             car_id = self.find_pickup_car_on_land_pos(land_pos_car_set)
@@ -1157,17 +1119,12 @@ class Car_traffic_scheduler:
                 car = self.car_info[car_id]
                 car_now_pos = car.pos 
             
-            # rospy.loginfo("car id = " + str(car_id))
-            # 这里的route设定和上面的一样 其实可以抽象成单独的函数 后续可以做
+            # rospy.loginfo("AGV id = " + str(car_id))
             if car_id in self.line_1_car_id_set and car_id in land_pos_car_set:
                 # mid = Position(6 + 180, 11 + 420, -16)
                 # rospy.loginfo("line1")
                 another_car_id  = self.find_line_another_car_id(car_id)
-                
-                # 如果后面已经有车等待 且暂时没有飞机要降落 且仍有空余的飞机
-                # 就去work wait pos
-                # another_car_id in wait_pos_car_set 
-                # 这里判断另一个车是否正在移动 但是还没到work wait pos
+
                 another_x = self.car_info[another_car_id].pos.x
                 another_y = self.car_info[another_car_id].pos.y
                 gap_n = 0.5
@@ -1187,37 +1144,9 @@ class Car_traffic_scheduler:
                     # mid_1 = Position(8 + 180, 11 + 420, -16)
                     route = [car_now_pos,  car_goal_pos]
                     cmd_res[car_id] = {'cmd':'MOVE_TO_TARGET', 'route':route}
-                # self.work_station_car_id = car_id
-            
-            # 这里认为line2上车不要去上新的飞机  等待飞机降落就好了 这里line2 可以去接 保留修改可能
-            # elif car_id in self.line_2_car_id_set and car_id in land_pos_car_set:
-            #     another_car_id  = self.find_line_another_car_id(car_id)
+                # self.work_station_car_id = car_id                       
 
-            #     # rospy.loginfo("line2")
-            #     if another_car_id in wait_pos_car_set \
-            #         and self.car_have_landing_uav(car_id) is False \
-            #         and len(self.uav_ready) != 0:
-            #         # rospy.loginfo("go 2")
-            #         mid = Position(4.5 + 180, 17 + 420, -16)
-            #         car_goal_pos = self.work_wait_p2
-            #         route = [car_now_pos, mid, car_goal_pos]
-            #         cmd_res[car_id] = {'cmd':'MOVE_TO_TARGET', 'route':route}
-                # self.work_station_car_id = car_id
-            
-            # 这里认为line3上车不要去上新的飞机  等待飞机降落就好了
-            # elif car_id in self.line_3_car_id_set and car_id in land_pos_car_set:
-            #     another_car_id  = self.find_line_another_car_id(car_id)
-            #     # rospy.loginfo("line3")
-            #     if another_car_id in wait_pos_car_set \
-            #         and self.car_have_landing_uav(car_id) is False:  
-            #         # rospy.loginfo("go 3")               
-            #         mid_1 = Position(1 + 180, 25 + 420, -16)
-            #         car_goal_pos = self.work_wait_p3
-            #         route = [car_now_pos, mid_1, car_goal_pos]
-            #         cmd_res[car_id] = {'cmd':'MOVE_TO_TARGET', 'route':route}
-                # self.work_station_car_id = car_id                            
-
-        # 如果nei pos一直有 但是车一直没动 就需要一直发move cmd
+        # If the nei pos is always there, but the AGV never moves, you need to keep sending the move cmd.
         if self.nei_pos_car_id != None:
             car_id = self.nei_pos_car_id
             car = self.car_info[car_id]
@@ -1242,16 +1171,13 @@ class Car_traffic_scheduler:
                     route = [car_pos, mid, self.para.work_station_pos]
                     cmd_res[car_id] = {'cmd':'MOVE_TO_TARGET', 'route':route}                    
 
-        # 工作区没有被占据
+        # Workspace is not occupied
         self.work_station_free = self.Judge_work_station_is_free()
         if self.work_station_free is True:
             rospy.loginfo("work_station_free is True")
-            # 找到所有car_waiting_go_gw 让它们先去工作区 此时这些车上是有飞机的
-            # rospy.loginfo("car_waiting_go_gw")
-            # rospy.loginfo(self.car_waiting_go_gw)
-            
-            # 处于gw的车 在line1 处于work wait pos 和 line 23 处于nei pos上的车
-            # 选择让去工作区
+            # Find all the car_waiting_go_gw's and get them to the work zone first. There are planes on these AGV.       
+            # AGV in gw on line 1 in work wait pos and line 23 in nei pos.
+            # Select to go to the workspace
             if self.judge_gw_car_on_work_wait_pos_or_nei_pos(work_wait_pos_car_set, nei_car_set) is True:
                 rospy.loginfo("找到处于gw的车 且位于nei pos上的车 让去工作区")
                 car_id = self.choose_urgent_car_to_go_work_station(work_wait_pos_car_set, nei_car_set)
@@ -1260,17 +1186,13 @@ class Car_traffic_scheduler:
                 cmd_res[car_id] = {'cmd':'MOVE_TO_TARGET', 'route':route}
                 self.work_station_car_id = car_id            
 
-            # 如果在等待进入工作区的飞机没有gw 但是有pickup的 且还有飞机ready 让去上飞机
+            # If an UAV waiting to enter the workspace doesn't have a gw, 
+            # but has a pickup, and there's an UAV ready, let's get it on the UAV.
             elif self.judge_gw_car_on_work_wait_pos_or_nei_pos(work_wait_pos_car_set, nei_car_set) is False \
             and self.judge_pickup_car_on_work_wait_pos(work_wait_pos_car_set) is True \
             and len(self.uav_ready) != 0:
                 rospy.loginfo("如果在等待进入工作区的飞机没有gw 但是有pickup的 且还有飞机ready 让去上飞机")
                 for car_id in work_wait_pos_car_set:
-                    # rospy.loginfo(car_id)
-                    # rospy.loginfo("judge_have_wait_car")
-                    # rospy.loginfo(self.judge_have_wait_car(car_id, wait_pos_car_set))
-                    # rospy.loginfo("car_have_landing_uav")
-                    # rospy.loginfo(self.car_have_landing_uav(car_id))
                     # 这里只能让line1的车去
                     if car_id in self.line_1_car_id_set:
                         route = self.choose_route_for_car_go_workstation(car_id)
@@ -1278,9 +1200,9 @@ class Car_traffic_scheduler:
                         self.work_station_car_id = car_id
                         break   
 
-        else: # 工作区被占据
+        else: # Workspace occupied
             rospy.loginfo("work_station is occupied")
-            # 判断是发送命令 是上货 还是还飞机
+            # Determine whether to send a command to load or return the UAV.
             if self.judge_car_is_on_work_station() is True:
                 rospy.loginfo("car is on work station")
                 car_id = self.work_station_car_id
@@ -1296,7 +1218,7 @@ class Car_traffic_scheduler:
                         bool_have_cargo = True
                 else:
                     bool_have_cargo = False
-                # 如果时间冲突 地面即将起飞两个有一个冲突
+                # If there's a time conflict and the ground is about to take off, there's a conflict between the two.
                 if bool_need_retrieve is True and self.car_info[car_id].have_uav is True \
                 and bool_have_cargo is False:
                     uav_id = self.car_info[car_id].uav_sn
@@ -1316,14 +1238,14 @@ class Car_traffic_scheduler:
                         self.leave_work_station_car_id = car_id                       
                 elif bool_need_retrieve is False and bool_ground is False \
                 and self.car_info[car_id].have_uav is False:
-                    # 只允许line1上飞机 z
+                    # Only line 1 is allowed on the UAV.
                     if car_id in self.line_1_car_id_set and car_id != self.leave_work_station_car_id:
                         # rospy.logwarn("line1 上飞机")
                         rospy.loginfo("line1 上飞机")
                         cmd_res[car_id] = {'cmd':'RECEIVE_UAV'}
                 elif bool_need_retrieve is True and self.car_info[car_id].have_uav is False \
                 and bool_have_cargo is False:
-                    # 车来接飞机 但是突然发现 来不及上 立即离开
+                    # The AGV comes to pick up the UAV, but suddenly it was too late to get on and leave immediately.
                     if car_id in self.line_1_car_id_set:
                         rospy.loginfo("车来接飞机 但是突然发现 来不及上 立即离开")
                         self.leave_work_station_car_id = car_id 
@@ -1337,9 +1259,6 @@ class Car_traffic_scheduler:
                     uav_id = self.car_info[car_id].uav_sn
                     rospy.loginfo("self.uav_info_dict[uav_id].have_cargo=" + str(self.uav_info_dict[uav_id].have_cargo))
                     if self.uav_info_dict[uav_id].have_cargo == False:
-                        # rospy.loginfo("")
-                        # rospy.loginfo("remaining_battery  = " + str(self.uav_info_dict[uav_id].remaining_battery))
-                        # rospy.loginfo(self.uav_info_dict[uav_id].remaining_battery <= 90)
                         if self.uav_info_dict[uav_id].remaining_battery <= 50:
                             if self.uav_info_dict[uav_id].remaining_battery <= 30:
                                 rospy.loginfo("battery is low")
@@ -1357,17 +1276,7 @@ class Car_traffic_scheduler:
                             rospy.loginfo("load cargo")
                             # rospy.logwarn("上货")
                             cmd_res[car_id] = {'cmd':'LOAD_CARGO'}
-                    
-                # elif car_id in self.car_for_land_set:
-                #     car_id = self.car_waiting_uav_work[0].sn
-                #     if self.car_info[car_id].have_uav is True:
-                #         rospy.loginfo("retrieve uav")
-                #         # 如果车属于降落 还飞机
-                #         cmd_res[car_id] = {'cmd':'UAV_RETRIEVE'}
-
-        # rospy.loginfo("work is free = " + str(self.work_station_free))
-        # if cmd_res != {}:
-        #     rospy.logerr(f"car cmd res: {cmd_res}")
+                
             
         rospy.loginfo(f"car cmd res: {cmd_res}")
             # rospy.loginfo(cmd_res)
@@ -1390,8 +1299,8 @@ class Car_traffic_scheduler:
             return False
 
     def update_car_uav_cargo_info(self):
-        # 找到那些还没有起飞 但是已经在移动的车
-        # 一个即将出发的卸货站id set
+        # Finding AGV that haven't taken off yet but are already on the move
+        # An unloading station that's about to depart id set
         rospy.loginfo("uav_id_to_unloading_station_id")
         rospy.loginfo(self.uav_id_to_unloading_station_id)
         self.soon_to_go_unload_station_id_set = set()
@@ -1413,7 +1322,7 @@ class Car_traffic_scheduler:
         else:
             return False
     def cal_flight_route_time(self, line_id, unloading_station_id):
-        # 根据line和要去的station 计算出一个飞行的时间
+        # Calculate a flight time based on the line and the station you're going to.
         time = self.uav_go_flight_time[line_id][unloading_station_id]
         # rospy.logwarn(f"line:{line_id} unloading_station_id:{unloading_station_id} flight time:{time}")
         rospy.loginfo(f"line:{line_id} unloading_station_id:{unloading_station_id} flight time:{time}")
@@ -1457,7 +1366,7 @@ class Car_traffic_scheduler:
         return car_id_a, car_id_b
 
     def judge_landpos_have_car(self, line_id):
-        # 判断这个line上 landpos是否有车
+        # Determine if there is a AGV in the landpos on this line.
         car_id_a, car_id_b =  self.get_two_car_id(line_id)
         if car_id_a in self.land_pos_car_set or car_id_b in self.land_pos_car_set:
             return True
@@ -1490,10 +1399,10 @@ class Car_traffic_scheduler:
         return False
 
     def judge_need_retrieve(self, car_id):
-        # 判断当前车上的飞机 是否需要回收
-        # 当前车上货的订单号
-        # 这个卸货点 unloading cargo pressure = 1或者2
-        # 找到那个最大的时间
+        # Determine if the UAV on the current truck needs to be recovered
+        # The order number of the current load
+        # This unloading point unloading cargo pressure = 1 or 2
+        # Find the maximum time
         unloading_station_id = self.unload_station_id
         if self.unload_station_id == None:
             return False
@@ -1512,7 +1421,7 @@ class Car_traffic_scheduler:
         if self.judge_to_many_gw_car() is True:
             return True
 
-        # 去的航线上没有飞机 不需要回收，回来的航线没有飞机 不着急回收
+        # No airplanes on the way there, no need to recycle, no airplanes on the way back, no rush to recycle.
         if back_num == 0:
             # rospy.logwarn("回来的航线没有飞机 不着急")
             rospy.loginfo("回来的航线没有飞机 不着急")
@@ -1525,8 +1434,8 @@ class Car_traffic_scheduler:
 
         if go_num != 0:
             other_uav_time = self.other_uav_fly_time(unloading_station_id)  
-            # （航线预计时间 -（别的飞机时间 - 上货时间 - 运动到目标点时间））< 起飞间隔时间
-            # 等待时间 = 起飞间隔时间 - （航线预计时间 -（别的飞机时间 - 上货时间 - 运动到目标点时间））
+            # (Estimated route time - (other UAV time - loading time - movement to target)) < takeoff interval
+            # Waiting time = takeoff interval - (estimated route time - (other UAV time - loading time - movement to target))
             gap_time = flight_time - (other_uav_time - loading_cargo_time - moving_takeoff_time)
             wait_time = go_time_gap - gap_time
             rospy.loginfo("other_uav_time: %f", other_uav_time)
@@ -1552,12 +1461,14 @@ class Car_traffic_scheduler:
         if wait_time < 0:
             wait_time = 0
 
-        # (等待时间 + 运动到land pos的时间 + 上货时间 + 从上货点到takeoff_pos时间) < 飞机剩余降落时间
+        # (Waiting time + movement time to land pos + loading time + 
+        # time from loading point to takeoff_pos) < Remaining landing time of the UAV
 
-        # 1-当前这个车上飞机后 到达起飞点后 是否能够立即起飞
-        # 如果不能够立即起飞 需要等待的时间大于某个值
+        # 1-Whether the UAV on board can take off immediately after arriving at the takeoff point.
+        # 1- whether the UAV can take off immediately after arriving at the takeoff point 
+        # 2- whether the UAV is going to land soon
 
-        # 2-这个马上要降落的飞机时间很紧急
+        # 2-This UAV is about to land in an emergency.
         land_pos_have_uav = self.judge_landpos_have_car(line_id)
         moving_landpos_time = self.determine_moving_to_landpos_time(line_id)
         land_num = self.car_land_pressure[line_id]['num']
@@ -1575,8 +1486,8 @@ class Car_traffic_scheduler:
         max_time_drone_id = max(uav_time, key=lambda k: uav_time[k])
         uav_land_remain_time = max(uav_list)
 
-        # 在这个line上car land pressure = 1 并且land pos上没有飞机
-        # 还需要判断是否有飞机已经在前面了
+        # On this line AGV land pressure = 1 and there are no planes on the land pos.
+        # And need to determine if there's a UAV already in front of it
         if len(uav_list) == 1:
             rospy.loginfo("land num=1")
             # rospy.logwarn("land num=1")
@@ -1604,14 +1515,14 @@ class Car_traffic_scheduler:
                     return True
 
         elif len(uav_list) == 2:
-        # car land pressure = 2 land pos上有飞机 看最长的时间的飞机 
+        # AGV land pressure = 2 land pos上有飞机 看最长的时间的飞机 
             if self.judge_line_need_car(car_id) is True:
                 uav_land_remain_time = min(uav_list)
             else:
                 uav_land_remain_time = max(uav_list)
 
             rospy.loginfo("car land num = 2 land pos上有飞机 看最长的时间的飞机")
-            # rospy.logwarn("car land num = 2 land pos上有飞机 看最长的时间的飞机")
+            # rospy.logwarn("AGV land num = 2 land pos上有飞机 看最长的时间的飞机")
             time_last = (wait_time + moving_landpos_time + loading_cargo_time + moving_takeoff_time)
             rospy.loginfo("time_last = %f", time_last)
             rospy.loginfo("uav_land_remain_time = %f", uav_land_remain_time)
@@ -1637,15 +1548,15 @@ class Car_traffic_scheduler:
         return False
 
     def judge_line_need_car(self, car_id):
-        # 判断当前line的另一辆车 是否马上要去land pos
+        # Determine if another AGV in the current line is going to land pos soon.
         line_id = self.judge_car_on_line_number(car_id)
         another_car_id = self.find_line_another_car_id(car_id)
         another_car = self.car_info[another_car_id]
 
-        # 如果另一个车处于gw的状态 或者wait uav work 说明需要车马上过来
+        # If the other AGV is in gw, or wait uav work, that means it needs to come right away.
         if another_car_id in self.car_waiting_go_gw_set: 
             rospy.loginfo("another car is going to gw")
-            # rospy.logwarn("another car is going to gw")
+            # rospy.logwarn("another AGV is going to gw")
             return True
         elif another_car_id in self.car_waiting_uav_work_set:
             rospy.loginfo("another car is waiting_uav_work")

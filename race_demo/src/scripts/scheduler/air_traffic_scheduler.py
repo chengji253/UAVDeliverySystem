@@ -18,13 +18,12 @@ from race_demo.msg import UserCmdResponse
 
 
 class Air_traffic_scheduler:
-    # 空中交通管理类
     
     def __init__(self):
         
         self.para = Para()
         
-        # 无人机机场位置 和 卸货的位置
+        # Location of UAVs in airport and unloading location
         self.drone_station_origin = self.para.drone_station_origin
         # self.work_station_pos = [190, 425, -16]
         self.work_station_pos = self.para.work_station_pos
@@ -33,20 +32,21 @@ class Air_traffic_scheduler:
         self.safe_flight_min_height = -60
         self.safe_flight_max_height = -120
         
-        # 所有飞行路径的信息 
-        # 根据路径id 查询 path 长短 去还是回的路 有哪些飞机分别在哪个位置
+        # Info on all flight routes
+        # According to the path ID, check whether the route is long or short, 
+        # which planes are on the way back, and where they are located
         self.flight_path_info = {}
         
-        # 根据 卸货点id 找到去 和 回的路径id
+        # Find the destination and return route id based on the unloading point id
         self.unloadingStaion_id_to_path = {}
         
-        # 降落点信息 有哪些降落点可以使用 
+        # Landing point info and which landing points are available
         self.land_point = {}
         
-        # 起飞点信息 有哪些起飞点可以使用
+        # Takeoff point info and which takeoff points are available
         self.take_off_point = {}
         
-        # 卸货点的位置
+        # Location of unloading points
         self.release_cargo_pos = {}
 
         # self.read_map_main()
@@ -92,16 +92,16 @@ class Air_traffic_scheduler:
                        'SIM-DRONE-0021', 'SIM-DRONE-0022', 'SIM-DRONE-0023', 'SIM-DRONE-0024', 'SIM-DRONE-0025',
                        'SIM-DRONE-0026', 'SIM-DRONE-0027', 'SIM-DRONE-0028', 'SIM-DRONE-0029', 'SIM-DRONE-0030']
         
-        # 当前无人机id对应的route
+        # Route corresponding to the current UAV id
         self.uav_id_to_route_now = {}
 
     def init_info_one(self):
-        # 去和回来 飞机之间的时间差
-        # 必须要大于这个时间差才可以起飞
+        # The time difference between going and coming back to the UAV
+        # Must be greater than that to take off
         self.go_time_gap = []
         self.back_time_gap = []
         
-        # 飞机id 到相关飞行信息的 dict
+        # UAV id to dict of relevant flight information
         self.uav_flight_dict = {}
         for i in range(30):
             dic = {'flying':False, 'on_go_path':False, 'on_back_path':False,
@@ -110,7 +110,7 @@ class Air_traffic_scheduler:
             self.uav_flight_dict[uav_id] = dic
 
         
-        # 卸货点的飞机信息
+        # UAVs information at unloading points
         self.unloading_cargo_pressure ={0: {'num':0, 'uav_time': {}},
                                         1: {'num':0, 'uav_time': {}},
                                         2: {'num':0, 'uav_time': {}},
@@ -118,26 +118,26 @@ class Air_traffic_scheduler:
                                         4: {'num':0, 'uav_time': {}},
                                         5: {'num':0, 'uav_time': {}}}
         # uav_time = {id : remain_time}
-        # 降落点的飞机信息
+        # UAVs information at landing points
         self.car_land_pressure = {1: {'num':0, 'uav_time': {}},
                                   2: {'num':0, 'uav_time': {}}, 
                                   3: {'num':0, 'uav_time': {}}}
         
-        # 无人机出发的时间 计算一个静态的
-        # 后面的字典station id 到 时间
+        # The UAVs departure time, static
+        # Behind the dictionary station id to time
         self.uav_go_flight_time = {1: {},
                                    2: {},
                                    3: {}}
         
         
-        # 当一个飞机选择一个降落点后 它的状态需要一定时间才能完成转变
-        # 此时这个飞机选定的降落点不能被其它飞机选择
-        # 当这个飞机状态变为flying back后 dict自动删除
-        # 如果飞机的状态还在wait back则不删除
+        # When an UAV selects a landing point, it takes time for its state to change
+        # The landing point selected by this UAV cannot be selected by other UAVs
+        # When the UAV status changes to flying back, the dict is automatically deleted.
+        # If the UAV state is still wait back, it's not deleted.
         self.cannot_choose_car_dict = {}
     
     def init_flight_path(self):
-        # 根据卸货点初始化相应的go back航线
+        # Initialize go back routes according to unloading points.
         
         # for cargo in unloading_cargo_stations:
         #     idx = cargo['index']
@@ -146,8 +146,8 @@ class Air_traffic_scheduler:
         #     z = cargo['position']['z']  
         #     self.release_cargo_pos[idx] = [x, y, z]            
         
-        # 选择出发区域中的一个中心位置 
-        # 计算这个位置到cargo的path路径
+        # Select a central location in the departure area 
+        # Calculate the path from this location to the path of the cargo
         self.take_off_center_pos = [15 + 180, 20 + 420, -16]
         self.land_center_pos = [5 + 180, 20 + 420, -16]
         
@@ -205,7 +205,7 @@ class Air_traffic_scheduler:
                     [245, 416.5, -93],
                     [185, 440, -16]])] 
         
-        # 卸货点的go back mid pos
+        # loading points' go back mid pos
         self.unloading_cargo_id_to_mid_pos = {
             0:{'go_mid_pos':[154, 186, -61], 'back_mid_pos':[138, 186, -61]},
             1:{'go_mid_pos':[430, 176, -61], 'back_mid_pos':[430, 192, -61]},
@@ -240,8 +240,8 @@ class Air_traffic_scheduler:
                           uav_waiting_go, uav_waiting_back,
                           uav_flying_go, uav_flying_back,
                           uav_id_to_unloading_station_id):
-        # 根据总节点的信息 更新当下的path drone信息
-        # 从而完成调度
+        # Update the current path UAV information based on the total node information
+        # So that scheduling is complete
         self.uav_info = uav_info_dict
         self.uav_ready = uav_ready
         self.uav_waiting_go = uav_waiting_go
@@ -256,7 +256,7 @@ class Air_traffic_scheduler:
                             car_waiting_pickup, car_running,
                             car_waiting_go_aw, car_waiting_go_gw,
                             car_waiting_uav_work):
-        # 根据总节点的信息 更新当下car信息 从而完成调度
+        # Update the current AGV information based on the total node information to complete the scheduling.
         self.car_info = car_info_dict
         self.car_waiting_pickup = car_waiting_pickup
         self.car_running = car_running                              
@@ -290,7 +290,7 @@ class Air_traffic_scheduler:
         # rospy.logwarn("self.car_running_set")
         # rospy.logwarn(self.car_running_set)
     def find_uav_fly_back(self):
-        # 找到哪些无人机正在回来 哪些已经回来结束-降落
+        # Find out which UAVs are coming back and which ones have come back to end-landing.
         uav_fly_back_set = set()
         uav_all_set = set()
         
@@ -324,12 +324,12 @@ class Air_traffic_scheduler:
                 rospy.loginfo("have conflict")
                 return True
         
-        # 返回false表示没有冲突
+        # Returns false to indicate that there is no conflict
         rospy.loginfo("no conflict")
         return False
     
     def canont_choose_update(self):
-        # 不能选择的car刷新
+        # Unselectable AGVs refreshes
         uav_fly_back_set = set()
         uav_wait_back_set = set()
         for uav in self.uav_flying_back:
@@ -361,8 +361,8 @@ class Air_traffic_scheduler:
         self.uav_id_to_route_now[uav_id] = dict_n
 
     def choose_urgent_uav_go_back(self):
-        # 在所有self.uav_waiting_back中选择最紧急的回来
-        # 找到那些有飞机正在过来 且到达时间最小的
+        # Select the most urgent back of all self.uav_waiting_backs
+        # Find the ones that have UAV coming and have the smallest arrival time
         if len(self.uav_waiting_back) == 1:
             return self.uav_waiting_back[0].sn
 
@@ -418,9 +418,9 @@ class Air_traffic_scheduler:
             #     self.car_land_pressure[2]['num'] += 1
             #     self.car_land_pressure[3]['num'] += 1
             
-            # 选择 num最小 且时间不冲突的 降落位置
+            # Select the landing location with the smallest num and no time conflict
             sorted_pos_id = sorted(self.car_land_pressure, key=lambda x: self.car_land_pressure[x]['num'])
-            # 和所有别的飞机的降落时间差控制在 time_gap_all 以上 防止降落时冲突
+            # Keep the landing time difference with all other UAVs above time_gap_all to prevent landing conflicts.
             time_list_all = []
             for key, value in self.car_land_pressure.items():
                 uav_time = value['uav_time']
@@ -428,13 +428,13 @@ class Air_traffic_scheduler:
                     time_list_all.append(v1)
             # rospy.loginfo("time_list_all")
             # rospy.loginfo(time_list_all)
-            # 和当前降落位置的飞机不能发生冲突
+            # No conflicts with UAV in current landing position
             cannot_choose_car_set = set()
             for key, value in self.cannot_choose_car_dict.items():
                 cannot_choose_car_set.add(value)
             
             for pos_id in sorted_pos_id:
-                # 每一个pos id 都要计算一下 remain time
+                # For each pos id, calculate the remain time
                 route = self.set_route_for_uav_back(uav_id, pos_id)
                 self.set_uav_to_route_dict(uav_id, route)
                 remain_time = self.cal_remain_time_one(uav_pos, uav_id)
@@ -442,7 +442,6 @@ class Air_traffic_scheduler:
                 uav_number = self.car_land_pressure[pos_id]['num']
                 # rospy.loginfo("uav_time_list")
                 # rospy.loginfo(uav_time_list)
-                # 每一个pos 都会判断一下 在for循环里面
                 if uav_number == 0:
                     rospy.loginfo("uav_number == 0")
                     if self.judge_time_conflict(remain_time, time_list_all, time_gap_all) is False \
@@ -461,8 +460,8 @@ class Air_traffic_scheduler:
 
                 elif uav_number == 1:
                     rospy.loginfo("uav_number == 1")
-                    # 和当前的line的飞机不能有冲突
-                    # 和别的line飞机不能有冲突
+                    # Can't conflict with the current line's UAVs
+                    # Can't conflict with any other line's UAVs
                     uav_time_n = self.car_land_pressure[pos_id]['uav_time']
                     uav_time_list = []
                     for key, value in uav_time_n.items():
@@ -471,9 +470,9 @@ class Air_traffic_scheduler:
                     if self.judge_time_conflict(remain_time, uav_time_list, time_gap_one) is False \
                     and self.judge_time_conflict(remain_time, time_list_all, time_gap_all) is False:
                         if pos_id not in cannot_choose_car_set:
-                            rospy.loginfo("满足约束 可以返回 line=" + str(pos_id)+ ",uav_id=" + str(uav_id) + " time_gap=" + str(time_gap_one))
+                            rospy.loginfo("Satisfying the constraints can return line=" + str(pos_id)+ ",uav_id=" + str(uav_id) + " time_gap=" + str(time_gap_one))
                             rospy.logwarn("uav_number == 1, time_gap=" + str(time_gap_one))
-                            rospy.logwarn("满足约束 可以返回 line=" + str(pos_id)+ ",uav_id=" + str(uav_id) + " time_gap=" + str(time_gap_one)) 
+                            rospy.logwarn("Satisfying the constraints can return line=" + str(pos_id)+ ",uav_id=" + str(uav_id) + " time_gap=" + str(time_gap_one)) 
                             uav_back_id_set.add(uav_id)
                             uav_id_to_land_pos_id[uav_id] = pos_id
                             self.cannot_choose_car_dict[uav_id] = pos_id
@@ -559,7 +558,7 @@ class Air_traffic_scheduler:
         # rospy.logwarn("path idx = " + str(path_idx))
         # rospy.logwarn("path_list = " + str(path_list))
                     
-        # 如果飞机还没有起飞 那么直接计算 总的路径距离除以速度就好了
+        # If the UAV hasn't taken off yet, then just calculate the total path distance divided by the speed
         uav_wait_set = set()
         for uav in self.uav_waiting_back:
             uav_wait_set.add(uav.sn)
@@ -574,7 +573,7 @@ class Air_traffic_scheduler:
             remaining_time = remaining_distance / 8 + 10
             return remaining_time
         
-        # 在飞行中 那么计算剩下时间
+        # In flight. Then calculate the time remaining.
         remaining_time = self.calculate_remaining_time_spe(current_pos, path_list, path_idx)
         
         if path_idx < len(path_list):
@@ -593,17 +592,17 @@ class Air_traffic_scheduler:
     
     def calculate_remaining_time_spe(self, current_position, path_list, nearest_index):        
         velocity = 8
-        # 计算从当前位置到该路径段终点的距离
+        # Calculate the distance from the current position to the end of the path segment
         if nearest_index >= len(path_list):
             return 0
         
         remaining_distance = self.euclidean_distance(current_position, path_list[nearest_index])
 
-        # 计算从该路径段之后到终点的总距离
+        # Calculate the total distance from the end point after this path segment
         for j in range(nearest_index, len(path_list) - 1):
             remaining_distance += self.euclidean_distance(path_list[j], path_list[j + 1])
         
-        # 根据速度计算剩余时间
+        # Calculate remaining time based on speed
         remaining_time = remaining_distance / velocity
         return remaining_time
 
@@ -612,18 +611,18 @@ class Air_traffic_scheduler:
         return np.linalg.norm(np.array(point1) - np.array(point2))
 
     def project_onto_segment(self, p, p1, p2):
-        # 计算向量
+        # computational vector
         v = np.array(p2) - np.array(p1)
         w = np.array(p) - np.array(p1)
-        # 计算投影比例
+        # Calculating Projection Scale
         c1 = np.dot(w, v)
         c2 = np.dot(v, v)
         b = c1 / c2
-        # 返回投影点
+        # Return to projection point
         return np.array(p1) + b * v
 
     def is_point_on_segment(self, p, p1, p2):
-        # 判断投影点是否在线段内
+        # Determine if the projected point is in the line segment
         return np.all(np.minimum(p1, p2) <= p) and np.all(p <= np.maximum(p1, p2))    
     
     def cal_remain_time(self, uav_pos, path):
@@ -642,26 +641,27 @@ class Air_traffic_scheduler:
         vel = 7
         # rospy.loginfo("height_gap = " + str(height_gap))
         if height_gap <= 1:
-            # 已经开始直线飞行 此时uav已经开始正式飞行前往卸货点 直接计算到第三个点的距离 除以速度就是飞行时间
-            # rospy.loginfo("--直线飞行--")
+            # Now that we're in a straight line, the uav is officially on its way to the unloading point, 
+            # so just calculate the distance to the third point, divide by the speed, and that's the flight time.
+            # rospy.loginfo("--flight--")
             land_time = abs(path_height - path[3][2])/vel + uav_land_time
             remain_time = dis_n3/vel + land_time
             return remain_time
         
         if dis_n2 < dis_n3:
-            # 刚起飞 仍然在上升
-            # rospy.loginfo("--上升--")
+            # Just took off, still on the rise.
+            # rospy.loginfo("--takeoff--")
             raise_time = (height_gap)/vel
             remain_time = long_dis/vel + raise_time + uav_land_time + abs(path_height - path[3][2])/vel
         else:
-            # 开始降落了
-            # rospy.loginfo("--降落--")
+            # Begin land
+            # rospy.loginfo("--landing--")
             remain_time = abs(uav_pos.z - path[3][2])/vel + uav_land_time
         return remain_time
     def update_uav_flight_info(self):
-        # 根据当前传进来的飞机 状态更新相关状态
+        # Update the status according to the current incoming UAVs status.
         
-        # 卸货点的飞机信息 动态更新
+        # UAVs information at unloading points Dynamically updated
         self.unloading_cargo_pressure ={0: {'num':0, 'uav_time': {}},
                                         1: {'num':0, 'uav_time': {}},
                                         2: {'num':0, 'uav_time': {}},
@@ -669,7 +669,7 @@ class Air_traffic_scheduler:
                                         4: {'num':0, 'uav_time': {}},
                                         5: {'num':0, 'uav_time': {}}}
         # uav_time = {id : remain_time}
-        # 降落点的飞机信息
+        # UAVs information at landing points
         self.car_land_pressure = {1: {'num':0, 'uav_time': {}},
                                   2: {'num':0, 'uav_time': {}}, 
                                   3: {'num':0, 'uav_time': {}}}
@@ -773,7 +773,7 @@ class Air_traffic_scheduler:
     
 
     def init_uav_go_flight_time(self):
-        # 初始化三个line 六个station的出发飞行时间 存放在字典里面
+        # Initialize the departure flight times for the three lines and six stations, and store them in a dictionary.
         for line_id in range(1, 4):
             for unloading_station_id in range(0, 6):
                 route = self.set_route_for_init(unloading_station_id, line_id)
@@ -785,7 +785,7 @@ class Air_traffic_scheduler:
         # rospy.logwarn(self.uav_go_flight_time)
 
     def set_route_for_init(self, unloading_station_id, line_id):
-        # 为即将出发的无人机计算一个route
+        # Compute a route for the upcoming UAV departure
         go_path = self.unloadingStaion_id_to_path[unloading_station_id]['path_go']
         route = []
         
@@ -808,31 +808,31 @@ class Air_traffic_scheduler:
         elif abs(now_pos.y - (self.take_off_p_3.y)) < 1:
             take_off_mid.x += 8
                             
-        # 添加当前位置 和 起飞前馈点
+        # Add current position and takeoff feedpoint
         route.append(now_pos)
         route.append(take_off_mid)
         
-        # 添加第二个前馈点
+        # Adding a second feedforward point
         take_off_mid_two = copy.deepcopy(take_off_mid)
         take_off_mid_two.x += 12
         route.append(take_off_mid_two)
         
-        # 添加 第三个前馈点 - 航线第一个点 xy 一样 但是高度是-61
+        # Add a third feedforward point - the first point of the route is the same xy, but the altitude is -61.
         path_1 = go_path[1]
         take_off_mid_three = Position(path_1[0], path_1[1], -61)
         route.append(take_off_mid_three)
 
-        # 添加航线位置
+        # Add route location
         for path in go_path[1:-1, :]:
             p_n = Position(path[0], path[1], path[2])
             route.append(p_n)
         
-        # 添加降落前馈位置
+        # Add landing feed forward position
         go_mid_pos = self.unloading_cargo_id_to_mid_pos[unloading_station_id]['go_mid_pos']
         mid_go = Position(go_mid_pos[0], go_mid_pos[1], go_mid_pos[2])
         route.append(mid_go)
         
-        # 添加降落位置
+        # Add landing position
         p_n = go_path[-1, :]
         land_n = Position(p_n[0], p_n[1], p_n[2])
         land_n.z += -5
@@ -841,7 +841,7 @@ class Air_traffic_scheduler:
         return route        
 
     def set_route_for_uav_go(self, uav_id):
-        # 为即将出发的无人机计算一个route
+        # Calculate a route for the UAV that's about to depart
         unloading_station_id = self.uav_id_to_unloading_station_id[uav_id]
         # rospy.loginfo(self.unloadingStaion_id_to_path)
         go_path = self.unloadingStaion_id_to_path[unloading_station_id]['path_go']
@@ -859,31 +859,31 @@ class Air_traffic_scheduler:
         elif abs(now_pos.y - (self.take_off_p_3.y)) < 1:
             take_off_mid.x += 8
                             
-        # 添加当前位置 和 起飞前馈点
+        # Add current position and takeoff feedpoint
         route.append(now_pos)
         route.append(take_off_mid)
         
-        # 添加第二个前馈点
+        # Adding a second feedforward point
         take_off_mid_two = copy.deepcopy(take_off_mid)
         take_off_mid_two.x += 12
         route.append(take_off_mid_two)
         
-        # 添加 第三个前馈点 - 航线第一个点 xy 一样 但是高度是-61
+        # Add a third feedforward point - the first point of the route is the same xy, but the altitude is -61.
         path_1 = go_path[1]
         take_off_mid_three = Position(path_1[0], path_1[1], -61)
         route.append(take_off_mid_three)
 
-        # 添加航线位置
+        # Add route location
         for path in go_path[1:-1, :]:
             p_n = Position(path[0], path[1], path[2])
             route.append(p_n)
         
-        # 添加降落前馈位置
+        # Add landing feed forward position
         go_mid_pos = self.unloading_cargo_id_to_mid_pos[unloading_station_id]['go_mid_pos']
         mid_go = Position(go_mid_pos[0], go_mid_pos[1], go_mid_pos[2])
         route.append(mid_go)
         
-        # 添加降落位置
+        # Add landing position
         p_n = go_path[-1, :]
         land_n = Position(p_n[0], p_n[1], p_n[2])
         land_n.z += -5
@@ -892,22 +892,21 @@ class Air_traffic_scheduler:
         return route
     
     def set_route_for_uav_back(self, uav_id, land_pos_id):
-        # 这里要给定land pos id 计算出route
+        # Here the land pos id is given to calculate the route
         unloading_station_id = self.uav_id_to_unloading_station_id[uav_id]
         back_path = self.unloadingStaion_id_to_path[unloading_station_id]['path_back']
         route = []
         now_pos = self.uav_info[uav_id].pos
         now_pos.z += -5
         
-        # 添加现在的位置
         route.append(now_pos)
         
-        # 添加回来的 卸货起飞 前馈点  
+        # Add back the unloading takeoff feed point  
         back_mid_pos = self.unloading_cargo_id_to_mid_pos[unloading_station_id]['back_mid_pos'] 
         mid_pos_one = Position(back_mid_pos[0], back_mid_pos[1], back_mid_pos[2])
         route.append(mid_pos_one)
         
-        # 添加航线上的两个点
+        # Add two points on the route
         for path in back_path[1:-1, :]:
             p_n = Position(path[0], path[1], path[2])
             route.append(p_n)
@@ -925,11 +924,11 @@ class Air_traffic_scheduler:
         
         line_num = self.judge_land_pos_which_line(land_n)
         
-        # 回来的land前馈点一
+        # Come back to the land before feedpoint 1
         land_mid_one = Position(path_2[0], path_2[1], path_2[2])
-        # 回来的land前馈点二 
+        # Come back to the land before feedpoint 2
         land_mid_two = copy.deepcopy(land_pos)
-        # 回来的land前馈点三
+        # Come back to the land before feedpoint 3
         land_mid_three = copy.deepcopy(land_pos)
         
         # line_1_height = -80
@@ -969,7 +968,7 @@ class Air_traffic_scheduler:
         route.append(land_mid_two)
         route.append(land_mid_three)
                 
-        # 添加回来的land点  
+        # Add back land points  
         route.append(land_n)        
         
         return route
@@ -1000,7 +999,7 @@ class Air_traffic_scheduler:
         self.find_uav_fly_back()
         
         
-        # 让需要回来的飞机 立即起飞
+        # Let the UAVs that need to come back take off immediately.
         if len(self.uav_waiting_back) != 0:
             for uav in self.uav_waiting_back:
                 uav_id = uav.sn
@@ -1010,13 +1009,13 @@ class Air_traffic_scheduler:
                 
                 land_pos_id = uav_id_to_land_pos_id[uav_id]
                 route = self.set_route_for_uav_back(uav_id, land_pos_id)
-                # 将这个route 复制到uav id中
+                # Copy this route to the uav id
                 # self.uav_id_to_route_now[uav_id] = route
                 self.set_uav_to_route_dict(uav_id, route)
                 
                 cmd_res[uav_id] = {"cmd": "DELIVER", "route":route}
             
-        # 让需要出发的飞机 立即起飞
+        # Get those UAVs that need to go off the ground right now.
         if len(self.uav_waiting_go) != 0:
             for uav in self.uav_waiting_go:
                 uav_id = uav.sn
@@ -1055,30 +1054,30 @@ class Air_traffic_scheduler:
         self.neighbor_car_set = neighbor_car_set
 
     def generate_line_points(self, startpos, endpos, spacing=1):
-        # 生成离散的点
-        # 提取x, y坐标
+        # Generate discrete points
+        # Extract x, y coordinates
         x1, y1 = startpos[0], startpos[1]
         x2, y2 = endpos[0], endpos[1]
-        # 计算总距离
+        # Calculate total distance
         distance = np.sqrt((x2 - x1) ** 2 + (y2 - y1) ** 2)
-        # 计算需要生成的点的数量
+        # Calculate the number of points to be generated
         num_points = int(np.ceil(distance / spacing))
-        # 生成离散点
+        # Generate discrete points
         x_points = np.linspace(x1, x2, num_points)
         y_points = np.linspace(y1, y2, num_points)
-        # 将x, y点组合成离散点列表
+        # Combine x, y points into a list of discrete points
         points = list(zip(x_points, y_points))
         # for point in points:
         #     rospy.loginfo(point)
         return points
 
     def read_map_main(self):
-        # 创建Map实例，假设地图文件路径为 "path/to/map/file"
+        # Create a Map instance, assuming the map file path is "path/to/map/file"
         map_file_path = "voxel_map.bin"
         self.map_instance = pymtmap.Map(map_file_path)
         map_instance = self.map_instance
 
-        # 检查地图是否有效
+        # Check if the map is valid
         if map_instance.IsValid():
             rospy.loginfo("Map is valid.")
             rospy.loginfo(f"Map boundaries: x({map_instance.min_x()} to {map_instance.max_x()}), "
@@ -1093,27 +1092,19 @@ class Air_traffic_scheduler:
             self.map_min_y = map_instance.min_y()
             self.map_min_z = map_instance.min_z()
             
-            # x, y, z = 1.0, 2.0, -222.0
-            # voxel = map_instance.Query(x, y, z)
-            
-            # rospy.loginfo(f"Voxel at ({x}, {y}, {z}):")
-            # rospy.loginfo(f"  Distance: {voxel.distance}")
-            # rospy.loginfo(f"  Current Height to Ground: {voxel.cur_height_to_ground}")
-            # rospy.loginfo(f"  Height to Ground: {voxel.height_to_ground}")
-            # rospy.loginfo(f"  Semantic: {voxel.semantic}")
+
         else:
             rospy.loginfo("Map is not valid.")
             
     def path_search_easy(self, start_pos, end_pos):
-        # 根据给出的起点和终点计算路径
-        # 这个计算出来的路径 可能不在60-120高度之内 如果在的话 那么这个路径就是有效的
-        # 如果不在60-120之内 就需要使用jps来搜索
-        # 但是这个路径的好处是不需要转弯
-        # start_pos = self.drone_station_pos
-        # end_pos = self.cargo_pos[0]
+        # Calculate the path based on the given start and end points.
+        # The calculated path may not be within the 60-120 altitude range. If it is, then the path is valid.
+        # If it's not within 60-120, then we need to use jps to search for it.
+        # But the good thing about this path is that it doesn't need to be turned around #
+
         
         line_points = self.generate_line_points(start_pos, end_pos)
-        # 通过暴力循环的方式 找到 路径安全高度
+        # Find the path safety height by looping.
         path_satety_height = 0
         path_height_list = []
         for point in line_points:
@@ -1158,10 +1149,8 @@ class Air_traffic_scheduler:
         y_min, y_max = 0, 700
         z_min, z_max = -222, 0
 
-        # 障碍物坐标列表
         # obstacles = self.map_obs
 
-        # 创建一个3D图形
         fig = plt.figure(figsize = (12, 9))
         ax = fig.add_subplot(111, projection='3d')
 
@@ -1171,7 +1160,6 @@ class Air_traffic_scheduler:
         # ax.set_zlim(z_min, z_max)
         ax.set_zlim(z_max, z_min)
 
-        # 使用numpy数组一次性绘制所有障碍物
         # ax.scatter(obstacles[:, 0], obstacles[:, 1], obstacles[:, 2], color='r', marker='o', s=1)
 
         for path_res in path_list_go:
@@ -1186,28 +1174,24 @@ class Air_traffic_scheduler:
         # path_res = self.compute_path(self.drone_station_pos, self.cargo_pos[0])
             ax.plot3D(path_res[:, 0], path_res[:, 1], path_res[:, 2], color='r')
 
-        # 设置坐标轴标签
         ax.set_xlabel('X Axis')
         ax.set_ylabel('Y Axis')
         ax.set_zlabel('Z Axis')
 
-        # 设置标题
         ax.set_title('3D Map with Obstacles')
         
         # plt.savefig("output.png")
-        # 显示图形
         plt.show()
         
     def deal_with_map(self):
         rospy.loginfo("deal_with_map")
-        # 使用步长为10代替5，减少遍历的点数
         for x in range(0, 700, 5):
             for y in range(0, 700, 5):
                 for z in range(-222, 0, 5):
                     voxel = self.map_instance.Query(x, y, z)
                     if voxel.distance == 0 and voxel.semantic != 255:
                         self.map_obs.append([x, y, z])
-        self.map_obs = np.array(self.map_obs)  # 转换为numpy数组
+        self.map_obs = np.array(self.map_obs)
 
     def path_search_JPS(self, start_pos, end_pos, height):
         start_pos = (start_pos[0], start_pos[1])
@@ -1225,7 +1209,7 @@ class Air_traffic_scheduler:
         # self.plot_matrix(self.map_matrix, path_res)
         return path_res
     def generate_matrix_map(self, height):
-        # 在当前高度下 生成一个二维矩阵matrix 0表示free 1表示obs
+        # Generate a 2D matrix at the current height matrix 0 is free 1 is obs
         matrix = np.zeros((self.map_max_x, self.map_max_y))
         for i in range(0, self.map_max_x):
             for j in range(0, self.map_max_y):
@@ -1268,23 +1252,10 @@ class Air_traffic_scheduler:
         return np.linalg.norm(np.array(des - cur))
 
     def judge_car_situation_can_back(self, line_id):
-        # 当前没有飞机 在line上 判断line是否有能力 接飞机
-        # 如果当前line 没有飞机正在回来 
-            # 如果没车在land pos 但是后面有车
+        # There's no UAV on the line at the moment. Determine if the line is capable of picking up an UAV
+        # If there's no UAV in the line that's coming back 
+        # If there's no AGV in land pos but there's a AGV behind it #
         if self.car_land_pressure[line_id]['num'] == 0:
-            # 如果有车在land pos直接回
-            # if self.judge_one_car_is_on_landpos(line_id) is True:
-            #     return True
-            # 如果没车在land pos 但是后面有车正在来
-            # if self.judge_one_car_is_comming(line_id) is True:
-            #     return True
-            # 如果没车在land pos 后面有车正在放飞飞机
-
-            # 如果没车在land pos 后面有车正在移动出workspace
-
-            # 如果没车在land pos 后面有车正在workspace上
-
-            # 如果两个车都在wait gw 那就需要等待很长时间
             if self.judge_two_car_is_gw(line_id) is True:
                 rospy.loginfo("two car is gw, need wait!")
                 return False
@@ -1293,13 +1264,14 @@ class Air_traffic_scheduler:
 
 
     def determine_land_pos_back_time(self, line_id):
-        # 根据当前的车运动的情况 决定飞机 选择当前回来的位置 的间隔时间
-        # 之前的间隔时间是静态的 这次改成动态的
-        # 这个考虑的case是已经有一架飞机要回来了
-        # 后面还有一架飞机的间隔时间判定
+        # Depending on the current movement of the AGV,
+        # the interval at which the UAV chooses its current return position will be determined
+        # The previous interval was static, this time it's dynamic
+        # This considers the case where there's already an UAV coming back
+        # The interval time for the next UAV is determined.
         rospy.loginfo("line_id=" +str(line_id))
                  
-        # 前面有一架飞机 land pos有车等待
+        # There's an UAV in front of us, land pos, and an AGV waiting.
         if self.car_land_pressure[line_id]['num'] == 1:
             if line_id != 1:
                 if self.judge_line_two_car_ready(line_id) is True:
@@ -1346,7 +1318,7 @@ class Air_traffic_scheduler:
             return pos_time_gap
 
     def determine_waiting_time(self, line_id):
-        # 当line id的车处于gw状态时 判断前面大概要等待几个车
+        # When the line id AGV is in gw state, determine how many AGVs are waiting in front of it
         nei_num = len(self.neighbor_car_set)
         car_1_id = self.line_1_car_id_list[0]
         car_2_id = self.line_1_car_id_list[1]
@@ -1380,8 +1352,8 @@ class Air_traffic_scheduler:
         return pos_time_gap
 
     def judge_car_in_gw_actual(self, car_id):
-        # 判断处于gw状态
-        # 有飞机但是没有货
+        # Determine if you're in a gw state
+        # There's an UAV but no cargo
         if car_id in self.car_waiting_go_gw_set:
             return True
         elif car_id in self.car_running_set:
@@ -1392,8 +1364,8 @@ class Air_traffic_scheduler:
         return False
     
     def judge_car_in_aw_actual(self, car_id):
-        # 判断处于aw状态
-        # 有飞机 有货
+        # Determine if you're in an aw state
+        # There's an UAV There's a cargo
         if car_id in self.car_waiting_go_gw_set:
             return True
         elif car_id in self.car_running_set:
@@ -1404,8 +1376,8 @@ class Air_traffic_scheduler:
         return False        
 
     def judge_car_in_pickup_actual(self, car_id):
-        # 判断处于pickup状态
-        # 或者运动中 没有飞机
+        # To determine if it's in a pickup state
+        # Or in motion There's no UAVs
         if car_id in self.car_waiting_pickup_set:
             return True
         elif car_id in self.car_running_set:
@@ -1413,7 +1385,7 @@ class Air_traffic_scheduler:
                 return True
         return False
     def judge_two_car_is_gw(self, line_id):
-        # 两个车都处于gw的状态
+        # Both AGVs are in gw
         car_id_a, car_id_b = self.get_two_car_id(line_id)
         if self.judge_car_in_gw_actual(car_id_a) is True \
         and self.judge_car_in_gw_actual(car_id_b) is True:
@@ -1424,7 +1396,7 @@ class Air_traffic_scheduler:
             return False        
 
     def judge_one_car_is_comming(self, line_id):
-        # 没有车在land pos但是 另外有车正在过来
+        # There's no AGV in land pos but there's another AGV coming
         car_id_a, car_id_b = self.get_two_car_id(line_id)
         car_a = self.car_info[car_id_a]
         car_b = self.car_info[car_id_b]
@@ -1434,8 +1406,9 @@ class Air_traffic_scheduler:
             line_pos = self.para.land_p2
         elif line_id == 3:
             line_pos = self.para.land_p3    
-        # 一个车不在land pos 
-        # 而另一车刚放飞飞机正在过来:y pos大于line y - 1，车已经处于wait pick up的状态
+        # One AGV is not in land pos 
+        # And the other AGVs just flew an UAV and is coming over: 
+        # y pos is greater than line y - 1, and the AGV is already in a wait pick up state
         if car_id_a not in self.land_pos_car_set \
         and self.judge_car_in_pickup_actual(car_id_b) is True \
         and car_b.pos.y > line_pos.y - 1:
@@ -1448,7 +1421,7 @@ class Air_traffic_scheduler:
             return False
 
     def judge_one_car_is_on_landpos(self, line_id):
-        # 任意有一辆车在land pos上
+        # There's an AGV on land pos at any one time.
         car_id_a, car_id_b = self.get_two_car_id(line_id)
         if car_id_a in self.land_pos_car_set or car_id_b in self.land_pos_car_set:
             return True        
@@ -1456,7 +1429,7 @@ class Air_traffic_scheduler:
             return False
 
     def judge_another_car_is_wait_gw(self, line_id):
-        # 后面无车等待-车还没进workspace
+        # No AGVs waiting in the back - AGVs not in the workspace yet!
         car_id_a, car_id_b = self.get_two_car_id(line_id)
         if car_id_a in self.land_pos_car_set and self.judge_car_in_gw_actual(car_id_b) is True \
             and car_id_a in self.car_waiting_pickup_set:
@@ -1472,7 +1445,7 @@ class Air_traffic_scheduler:
             return False        
 
     def judge_another_car_is_on_workspace(self, line_id):
-        # 后面无车等待 另一个正在工作区
+        # There's no AGV waiting in the back. The other one's in the workspace.
         car_id_a, car_id_b = self.get_two_car_id(line_id)
         if car_id_a in self.land_pos_car_set and car_id_b in self.car_waiting_uav_work_set \
             and car_id_a in self.car_waiting_pickup_set:
@@ -1488,7 +1461,7 @@ class Air_traffic_scheduler:
             return False
         
     def judge_another_car_is_moving_out_workspace(self, line_id):
-        # 后面无车等待 另一个车正在移动出workspace
+        # There's no AGV waiting behind us. Another AGV is moving out of the workspace.
         car_id_a, car_id_b = self.get_two_car_id(line_id)
         car_a = self.car_info[car_id_a]
         car_b = self.car_info[car_id_b]
@@ -1499,8 +1472,9 @@ class Air_traffic_scheduler:
         elif line_id == 3:
             line_pos = self.para.land_p3        
 
-        # 一个车正在land pos 
-        # 而另一车正在移动出workspace:y pos大于line y - 1，车已经处于waiting_go_aw_set的状态
+        # One AGV is in land pos 
+        # while the other AGV is moving out of workspace:
+        # y pos is greater than line y - 1, the AGV is already in waiting_go_aw_set
         if car_id_a in self.land_pos_car_set and self.judge_car_in_aw_actual(car_id_b) is True \
             and self.para.work_station_pos.y < car_b.pos.y < line_pos.y - 1 \
             and car_id_a in self.car_waiting_pickup_set:
@@ -1517,7 +1491,7 @@ class Air_traffic_scheduler:
             return False
 
     def judge_another_car_is_wait_uav_fly(self, line_id):
-        # 后面无车等待-另一个车已经放飞飞机 正在回来的路上
+        # There's no AGV waiting in the back - other AGVs has flown the UAV and is on its way back.
         car_id_a, car_id_b = self.get_two_car_id(line_id)
         car_a = self.car_info[car_id_a]
         car_b = self.car_info[car_id_b]
@@ -1529,8 +1503,9 @@ class Air_traffic_scheduler:
         elif line_id == 3:
             line_pos = self.para.land_p3
 
-        # 一个车正在land pos 
-        # 而另一车正在等待飞机起飞:y pos大于line y - 1，车已经处于waiting_go_aw_set的状态
+        # One AGV is in land pos 
+        # while the other AGV is waiting for an UAV to take off: 
+        # y pos is greater than line y - 1, and the AGV is already in waiting_go_aw_set
         if car_id_a in self.land_pos_car_set and car_id_b in self.car_waiting_go_aw_set \
             and car_b.pos.y > line_pos.y - 1 \
             and car_id_a in self.car_waiting_pickup_set:
@@ -1547,7 +1522,7 @@ class Air_traffic_scheduler:
             return False
 
     def judge_another_car_is_coming(self, line_id):
-        # 后面无车等待-另一个车已经放飞飞机 正在回来的路上
+        # There's no AGV waiting in the back - the other AGV has flown the UAV and is on its way back.
         car_id_a, car_id_b = self.get_two_car_id(line_id)
         car_a = self.car_info[car_id_a]
         car_b = self.car_info[car_id_b]
@@ -1559,8 +1534,9 @@ class Air_traffic_scheduler:
         elif line_id == 3:
             line_pos = self.para.land_p3
 
-        # 一个车正在正在land pos 
-        # 而另一车刚放飞飞机正在过来:y pos大于line y - 1，车已经处于wait pick up的状态
+        # One AGV is in land pos 
+        # And the other AGV just flew a UAV and is coming over: 
+        # y pos is greater than line y - 1, and the AGV is already in a wait pick up state
         if car_id_a in self.land_pos_car_set and self.judge_car_in_pickup_actual(car_id_b) is True \
             and car_b.pos.y > line_pos.y - 1 \
             and car_id_a in self.car_waiting_pickup_set:
@@ -1607,7 +1583,7 @@ class Air_traffic_scheduler:
         land_pos_car_set = set()
         wait_pos_car_set = set()
         work_wait_pos_car_set = set()
-        # 找到正处于land pos wait pos上 且处于car_waiting_pickup状态的车
+        # Find the AGV that is in the land pos wait pos and is in the car_waiting_pickup state.
         dis_c = 0.8
         for key, car in self.car_info.items():
             car_id = key
