@@ -1,5 +1,5 @@
 # UAV-delivery-management-system
-A Real-Time System for Scheduling and Managing UAV Delivery in Urban 
+A Real-Time System for Scheduling and Managing UAV Delivery in Urban Areas
 
 paper: http://arxiv.org/abs/2412.11590
 
