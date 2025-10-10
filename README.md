@@ -3,6 +3,12 @@ A Real-Time System for Scheduling and Managing UAV Delivery in Urban Areas
 
 paper: http://arxiv.org/abs/2412.11590
 
+
+
+https://github.com/user-attachments/assets/b8ead49d-89d7-430c-a2ca-6fd65d2db30c
+
+
+
 # 💫 Introduction
 
 ## Abstract
